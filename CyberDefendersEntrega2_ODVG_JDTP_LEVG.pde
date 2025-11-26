@@ -1,11 +1,9 @@
 void mouseReleased() {
   volumenArrastrando = false;
 }
-// ========================================
-// UnderWater: The Next Step (Processing)
-// ========================================
+// UnderWater: The Next Step
 
-// === IMÁGENES Y CONSTANTES DE UI ===
+// Imágenes y constantes de UI
 PImage iconPulpo, iconDelfin, iconEstrella, iconRobot, iconTortuga, iconCaballo;
 PImage avatarPulpo, avatarDelfin, avatarEstrella, avatarRobot, avatarTortuga, avatarCaballo;
 PImage imagenFondoTablero;
@@ -13,12 +11,11 @@ PImage imagenFondoMenu;
 PImage imagenFondoPanelLateral; // Imagen de fondo para el panel lateral del tablero
 PImage imagenFinJuego;
 PImage[] imagenesCaraDado = new PImage[6];
-// === FUENTE GENERALIZADA ===
-PFont fuentePrincipal; // Variable global para la fuente
-String nombreFuente = "Comic Sans MS"; // Cambiar aquí para usar otra fuente
+// Fuente
+PFont fuentePrincipal;
+String nombreFuente = "Comic Sans MS";
 
-// === PALETA DE COLORES ACUÁTICOS PARA TEXTOS ===
-// Modifica estos colores para cambiar la paleta de todo el juego
+// Colores para textos
 color colorTituloPrincipal = color(0, 160, 140);         // Verde mar profundo
 color colorTituloSecundario = color(40, 180, 150);       // Verde agua suave
 
@@ -32,8 +29,7 @@ color colorTextoInput = color(200, 230, 220);            // Verde grisáceo clar
 color colorTextoBoton = color(200, 230, 220);            // Verde claro suave
 color colorTextoHUD = color(210, 240, 230);              // Verde casi pastel
 
-// === PALETA DE COLORES PARA BOTONES ===
-// Modifica estos colores para cambiar el aspecto de todos los botones
+// Colores para botones
 color colorBotonNormal = color(30, 55, 50);               // Verde grisáceo profundo
 color colorBotonHover = color(70, 150, 130);              // Verde agua iluminado
 color colorBotonHoverAlternativo = color(60, 135, 120);   // Verde marino suave
@@ -50,8 +46,7 @@ color colorBotonVolverKraken = color(10, 70, 60);         // Verde mar profundo
 color colorBotonVolverTablero = color(20, 120, 90);       // Verde océano oscuro
 color colorBotonVolverMenu = color(70, 150, 130);         // Verde agua brillante suave
 
-// === CONFIGURACIÓN DE ESTILO DE BOTONES ===
-// Modifica estos valores para cambiar la apariencia de los botones
+// Estilo de botones
 float radioEsquinasBoton = 12.0;          // Radio de las esquinas redondeadas (0 = esquinas cuadradas)
 float grosorBordeBoton = 2.0;             // Grosor del borde de los botones (0 = sin borde)
 color colorBordeBoton = color(255, 255, 255, 80); // Color del borde (con transparencia)
@@ -60,7 +55,7 @@ float offsetSombraX = 2.0;                // Desplazamiento X de la sombra
 float offsetSombraY = 2.0;                // Desplazamiento Y de la sombra
 color colorSombraBoton = color(0, 0, 0, 100); // Color de la sombra (con transparencia)
 
-// === AUDIO SIMPLE ===
+// Audio
 import processing.sound.*;
 SoundFile musica;
 SoundFile sfxClick;
@@ -136,12 +131,12 @@ boolean hayErrorRondas = false;
 int rondasMin = 1;
 int rondasMax = 100;
 
-// === TABLERO Y RUTAS ===
+// Tablero y rutas
 int cantidadCasillas;
 int[][] casillas;
 int[][] vecinos;
 
-// === JUGADORES Y ESTADO DEL JUEGO ===
+// Jugadores y estado del juego
 PImage[] imagenesJugador;
 int cantidadJugadores;
 int[] posicionJugador;
@@ -153,9 +148,9 @@ int jugadoresSeleccionados;
 int jugadorActivo = 0;
 boolean desdeJuegosLibres = false; // Indica si se accedió a un minijuego desde el menú de juegos libres
 int submenuInstrucciones = -1; // -1 = menú principal, 0-9 = submenú seleccionado
-boolean mostrarCreditos = false; // Controla si se muestra el submenú de créditos
+boolean mostrarCreditos = false; // Para mostrar/ocultar créditos
 
-// === SELECCIÓN DE AVATARES ===
+// Selección de avatares
 String[] nombresAv = { "Pulpo", "Delfín", "Estrella", "Robot", "Tortuga", "Caballo de Mar" };
 PImage[] spritesAv = new PImage[6];
 boolean[] tomadoAv = new boolean[6];
@@ -189,7 +184,7 @@ color  colorTexto = #FFFFFF;
 boolean preguntaVisible = false;
 String  textoPreguntaActual = "";
 int indicePreguntaActual = 0;
-// === PREGUNTAS DE PERMISOS (CASILLAS DE PREGUNTA) ===
+// Preguntas de permisos (casillas de pregunta)
 String[] preguntasPermisos = {
   // 🔴 10 preguntas de apps o páginas sospechosas (restan si dices "Si")
   "Una app llamada 'Cleaner Pro' te pide acceso a tus contraseñas guardadas.",
@@ -248,7 +243,7 @@ char teclaAnterior;
 int tiempoTeclaAnteriorMs = 0;
 int retardoTeclaMs = 120;  // milisegundos entre repeticiones permitidas
 
-// --- Estado/variables principales ---
+// Variables del minijuego
 int    preguntaActualTrivia = 0;   // índice dentro del arreglo (ya barajado por mezclarPreguntasTrivia())
 int    preguntasContestadas = 0;   // cuántas preguntas ya fueron respondidas (máx 5)
 int    preguntasMaxTrivia   = 3;   // tope de preguntas por partida
@@ -259,12 +254,11 @@ boolean campoActivoTrivia      = true;  // si se aceptan teclas A/B/C/ENTER
 String  respuestaJugador       = "";
 String  mensajeInput           = "";
 
-// Variables para evitar repeticiones en los juegos
+// Para evitar repeticiones
 int indiceParesApps = 0;  // Índice actual en el array mezclado de paresApps
 int indiceFrasesKraken = 0;  // Índice actual en el array mezclado de frasesKraken
 
-// === TODAS LAS PREGUNTAS DEL MINIJUEGO TRIVIAS DEL ABISMO ===
-// Combina las originales + las nuevas generales sobre seguridad digital y blockchain.
+// Preguntas del minijuego Trivias del Abismo
 String[][] preguntasTrivia = new String[][]{
   // 💻 Preguntas originales del minijuego
   {"¿Qué tipo de archivo puede contener virus al ejecutarse?", "A) .jpg", "B) .exe", "C) .txt", "B"},
@@ -380,7 +374,7 @@ String[][] preguntasTrivia = new String[][]{
 
 int[] valoresPuntos = {1, 1, 2};
 
-// === FUNCIÓN: dibujarTrivia() ===
+// Dibuja la pantalla de trivia
 void dibujarTrivia() {
   if (fondoTrivia != null) image(fondoTrivia, 0, 0, width, height);
   else background(10, 30, 70);
@@ -441,10 +435,7 @@ void dibujarTrivia() {
   }
 }
 
-// === FUNCIÓN: procesarRespuestaTrivia() ===
-// - Valida A/B/C comparando con la columna [4] de la pregunta actual.
-// - Aplica puntaje (+rotativo si acierta, -2 si falla).
-// - Activa los botones Seguir/Salir y bloquea teclado hasta decidir.
+// Procesa la respuesta de la trivia
 void procesarRespuestaTrivia() {
   // Normalizar a una sola letra mayúscula
   String r = respuestaJugador.trim();
@@ -477,9 +468,7 @@ void procesarRespuestaTrivia() {
   mensajeInput = "";
 }
 
-// === FRAGMENTO PARA mousePressed() — MINIJUEGO 1 ===
-// Colócalo dentro de tu mousePressed(), **reemplazando** el bloque anterior
-// que manejaba los clics de "Seguir" y "Salir" de la trivia.
+// Maneja los clicks en la trivia
 void manejarClicksTrivia() {
   if (estadoPantalla == JUEGO1 && botonesTriviaVisibles && !juegoTerminadoTrivia) {
     float bx = width / 2 - 210;
@@ -549,7 +538,7 @@ void manejarClicksTrivia() {
   }
 }
 
-// === FRAGMENTO PARA keyPressed() — MINIJUEGO 1 ===
+// Maneja las teclas en la trivia
 void manejarTeclasTrivia() {
   if (estadoPantalla == JUEGO1 && !juegoTerminadoTrivia) {
     // Mientras estén visibles los botones, no aceptar nuevas letras
@@ -722,7 +711,7 @@ float[] brRapida = new float[10];
 // === MINIJUEGO 4: RED DEL ABISMO ===
 PImage fondoLaberinto;
 
-// === MINIJUEGO 6: FLAPPY OCEAN ===
+// Minijuego 6: Flappy Ocean
 PImage fondoFlappy;
 PImage imagenTubo;
 
@@ -740,7 +729,7 @@ boolean juegoTerminadoLaberinto = false;
 boolean puntosLaberintoOtorgados = false; // Bandera para evitar que se otorguen puntos múltiples veces
 boolean ganoLaberinto = false;
 
-// === MINIJUEGO 6: FLAPPY OCEAN ===
+// Minijuego 6: Flappy Ocean
 // Variables del jugador
 float flappyX = 150; // Posición X fija del jugador
 float flappyY = 300; // Posición Y del jugador
@@ -771,7 +760,7 @@ boolean juegoIniciadoFlappy = false; // Si el juego ha comenzado
 int ultimoObstaculoX = 0; // Para generar nuevos obstáculos
 boolean flappyDesdeMenu = false; // Indica si se accedió desde el menú (modo prueba)
 
-// === Subrutinas ===
+// Funciones del laberinto
 void inicializarLaberinto() {
   for (int i = 0; i < filasRed; i++) {
     for (int j = 0; j < columnasRed; j++) {
@@ -912,7 +901,7 @@ else if (millis() - tiempoInicioLaberinto > tiempoLimite) {
   }
 }
 
-// === MINIJUEGO 6: FLAPPY OCEAN - FUNCIONES ===
+// Funciones de Flappy Ocean
 void inicializarFlappyBird() {
   // Resetear posición y velocidad del jugador
   flappyX = 150;
@@ -1159,8 +1148,8 @@ void dibujarFlappyBird() {
   }
 }
 
-// === MINIJUEGO 5: ATAQUE DEL KRAKEN DIGITAL - FUNCIONES ===
-// Función auxiliar: distancia Manhattan en celdas
+// Funciones del minijuego Kraken
+// Calcula distancia Manhattan
 int distManhattan(int x1, int y1, int x2, int y2) {
   int celdaX1 = x1 / TAMANO_CELDA;
   int celdaY1 = y1 / TAMANO_CELDA;
@@ -1175,7 +1164,7 @@ int distManhattan(int x1, int y1, int x2, int y2) {
   return dx + dy;
 }
 
-// Función: spawn de tentáculos en oleadas
+// Spawn de tentáculos
 void krakenSpawn() {
   int tiempoActual = millis();
   int tiempoTranscurrido = tiempoActual - tiempoInicioKraken;
@@ -1333,7 +1322,7 @@ void inicializarMinijuegoKraken() {
   }
 }
 
-// === FUNCIONES DE EFECTOS VISUALES DEL KRAKEN ===
+// Efectos visuales del Kraken
 
 // Dibujar viñeta radial
 void dibujarVineta() {
@@ -1515,9 +1504,7 @@ void dibujarFlash() {
   }
 }
 
-// ========================================
-// FUNCIONES DE SELECCIÓN DE AVATAR
-// ========================================
+// Funciones de selección de avatar
 
 boolean estaSobre(int mx, int my, int x, int y, int w, int h) {
   boolean resultado = false;
@@ -1990,9 +1977,7 @@ void mostrarBotonVolverKraken() {
   text("Volver al tablero", width/2, height/2 + 85);
 }
 
-// ========================================
-// CONFIGURACIÓN INICIAL
-// ========================================
+// Configuración inicial
 
 void settings() {
   size(1400, 720);
@@ -2064,12 +2049,12 @@ fondoOrden = loadImage("fondo_corriente.jpg");
   spritesAv[4] = iconTortuga;
   spritesAv[5] = iconCaballo;
   
-  // === Imágenes de casillas para minijuegos 4, 5 y 6 ===
+  // Imágenes de casillas para minijuegos 4, 5 y 6
 minijuegoNuevo1 = loadImage("laberinto.png"); // JUEGO4
 minijuegoNuevo2 = loadImage("rey.png");       // JUEGO5
 minijuegoNuevo3 = loadImage("flappy.png");    // JUEGO6 - Flappy Ocean
   
-  // === Cargar imágenes de tentáculos (opcional, si existen) ===
+  // Cargar imágenes de tentáculos
   try {
     imagenesTentaculo[0] = loadImage("tentaculo.png");
   } catch (Exception e) {
@@ -2081,7 +2066,7 @@ minijuegoNuevo3 = loadImage("flappy.png");    // JUEGO6 - Flappy Ocean
     imagenesTentaculo[1] = null; // Si no existe, se usará el dibujo básico
   }
   
-  // === Cargar fuente ===
+  // Cargar fuente
   try {
     fuentePrincipal = createFont(nombreFuente, 18);
     textFont(fuentePrincipal);
@@ -2092,10 +2077,10 @@ minijuegoNuevo3 = loadImage("flappy.png");    // JUEGO6 - Flappy Ocean
   textAlign(CENTER, CENTER);
   textSize(18);
   
-  // === Mezclar preguntas aleatoriamente ===
+  // Mezclar preguntas
 mezclarPreguntasTrivia();
 
-  // === AUDIO (simple) ===
+  // Audio
   try {
     musica     = new SoundFile(this, "musica_fondo.mp3");
     sfxClick   = new SoundFile(this, "sfx_click.mp3");
@@ -2110,9 +2095,7 @@ mezclarPreguntasTrivia();
 
 }
 
-// ========================================
-// SUBRUTINA: inicializarCasillas()
-// ========================================
+// Inicializa las casillas del tablero
 void inicializarCasillas() {
   int[][] coordenadasCasillas = {
     {  88,140},{197,120},{274,115},{351,130},{428,150},{504,150},{582,165},{659,170},{735,160},{812,140},
@@ -2158,7 +2141,7 @@ int[] tipos = {
   vecinos[48][0] = 28; vecinos[48][1] = -1;
   vecinos[53][0] = 24; vecinos[53][1] = -1;
   
-    // === Parche de ramificación ===
+    // Parche de ramificación
   // 45 → 37 (y de ahí sigue normal a 38)
   vecinos[45][0] = 37;
   vecinos[45][1] = -1;
@@ -2174,9 +2157,7 @@ int[] tipos = {
 }
 
 
-// ========================================
-// SUBRUTINA: mezclarPreguntasTrivia()
-// ========================================
+// Mezcla las preguntas de trivia
 // Mezcla aleatoriamente el orden de las preguntas del minijuego Trivia
 // para que cada partida tenga un orden distinto de preguntas.
 void mezclarPreguntasTrivia() {
@@ -2228,11 +2209,7 @@ void mezclarFrasesKraken() {
   indiceFrasesKraken = 0; // Resetear índice
 }
 
-// ========================================
-// SUBRUTINA: dibujarCasillas()
-// ========================================
-// Dibuja todas las casillas del tablero con su tipo e índice.
-// Incluye las imágenes correspondientes y el número de casilla.
+// Dibuja las casillas del tablero
 void dibujarCasillas() {
   stroke(20);
   strokeWeight(2);
@@ -2278,10 +2255,7 @@ void dibujarCasillas() {
   }
 }
 
-// ========================================
-// SUBRUTINA: dibujarJugadores()
-// ========================================
-// Dibuja las fichas (iconos o círculos) de los jugadores sobre sus casillas.
+// Dibuja las fichas de los jugadores
 void dibujarJugadores() {
   for (int i = 0; i < cantidadJugadores; i++) {
     int indiceCasilla = posicionJugador[i];
@@ -2337,14 +2311,11 @@ void dibujarJugadores() {
   }
 }
 
-// ========================================
-// SUBRUTINA: actualizarTurno()
-// ========================================
-// Controla el cambio de turno, el avance de rondas y la finalización del juego.
+// Actualiza el turno y las rondas
 void actualizarTurno() {
   if (finTurnoPendiente && !animacionEnCurso && !preguntaVisible && !esperandoEleccionRuta) {
     
-    // Validar que cantidadJugadores es válido antes de avanzar turno
+    // Verificar que hay jugadores válidos
     if (cantidadJugadores <= 0) {
       println("Error: cantidadJugadores inválido: " + cantidadJugadores);
       finTurnoPendiente = false;
@@ -2368,7 +2339,7 @@ void actualizarTurno() {
       }
     }
     
-    // Validar que jugadorActivo está dentro de los límites
+    // Verificar que el jugador activo es válido
     if (jugadorActivo < 0 || jugadorActivo >= cantidadJugadores) {
       println("Error: jugadorActivo fuera de límites: " + jugadorActivo + " / " + cantidadJugadores);
       jugadorActivo = 0; // Resetear a un valor seguro
@@ -2432,7 +2403,7 @@ void actualizarTurno() {
   }
 }
 
-// Función auxiliar para modificar puntos de forma segura
+// Modifica los puntos del jugador actual
 void modificarPuntosJugador(float cantidad) {
   if (puntosJugador != null && 
       jugadorActivo >= 0 && 
@@ -2446,7 +2417,7 @@ void modificarPuntosJugador(float cantidad) {
   }
 }
 
-// Función auxiliar para modificar puntos de un jugador específico (para minijuegos con múltiples jugadores)
+// Modifica los puntos de un jugador específico
 void modificarPuntosJugadorEspecifico(int indiceJugador, float cantidad) {
   if (puntosJugador != null && 
       indiceJugador >= 0 && 
@@ -2466,7 +2437,7 @@ void aplicarEfectoCasilla(int tipo) {
   animacionEnCurso = false;
   esperandoEleccionRuta = false;
 
-  // Validar que tenemos acceso seguro a puntosJugador
+  // Verificar que podemos acceder a los puntos
   boolean accesoValido = (puntosJugador != null && 
                           jugadorActivo >= 0 && 
                           jugadorActivo < puntosJugador.length &&
@@ -2653,20 +2624,13 @@ case 11: // Flappy Ocean
   }
 }
 
-// ========================================
-// SUBRUTINA: mostrarMensaje(String texto, int duracionMs)
-// ========================================
-// Muestra un mensaje temporal en pantalla durante un tiempo dado (en milisegundos).
+// Muestra un mensaje temporal en pantalla
 void mostrarMensaje(String texto, int duracionMs) {
   mensaje = texto;
   mostrarMensajeHastaMs = millis() + duracionMs;
 }
 
-// ========================================
-// SUBRUTINA: dibujarBotonEstilizado(float x, float y, float w, float h, color colorBoton)
-// ========================================
-// Dibuja un botón con estilo personalizado (sombra, borde, esquinas redondeadas)
-// Si el color tiene transparencia (alpha < 255), se respeta
+// Dibuja un botón con estilo
 void dibujarBotonEstilizado(float x, float y, float w, float h, color colorBoton) {
   pushStyle();
   
@@ -2694,9 +2658,7 @@ void dibujarBotonEstilizado(float x, float y, float w, float h, color colorBoton
   popStyle();
 }
 
-// ========================================
-// LOOP PRINCIPAL
-// ========================================
+// Loop principal
 
 void draw() {
   // === MENÚ PRINCIPAL ===
@@ -3487,13 +3449,13 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   dibujarMinijuegoKraken();
   dibujarAudio();
 
-// === MINIJUEGO 6: FLAPPY OCEAN ===
+// Minijuego 6: Flappy Ocean
 } else if (estadoPantalla == JUEGO6) {
   actualizarFlappyBird();
   dibujarFlappyBird();
   dibujarAudio();
 
-// === MINIJUEGO 6: FLAPPY OCEAN ===
+// Minijuego 6: Flappy Ocean
 } else if (estadoPantalla == JUEGO6) {
   actualizarFlappyBird();
   dibujarFlappyBird();
@@ -3514,7 +3476,7 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   textSize(28);
   text("Gracias por jugar UnderWater: The Next Step", width/2, height/2 - 40);
   
-  // Validar que tenemos datos válidos antes de determinar el ganador
+  // Verificar datos antes de calcular el ganador
   int ganador = 0;
   boolean empate = false;
   
@@ -3818,12 +3780,10 @@ if (animacionEnCurso && !preguntaVisible && !esperandoEleccionRuta) {
  }
 }
 
-// ========================================
-// INPUT - MANEJO DE MOUSE
-// ========================================
+// Manejo de mouse
 
 void mousePressed() {
-  // === MINIJUEGO 6: FLAPPY OCEAN ===
+  // Minijuego 6: Flappy Ocean
   if (estadoPantalla == JUEGO6) {
     if (juegoTerminadoFlappy) {
       // Verificar click en botón "Volver"
@@ -4826,12 +4786,10 @@ if (estadoPantalla == FINAL_JUEGO) {
   }
 }
 }
-// ========================================
-// INPUT - MANEJO DE TECLADO
-// ========================================
+// Manejo de teclado
 
 void keyPressed() {
-  // === MINIJUEGO 6: FLAPPY OCEAN ===
+  // Minijuego 6: Flappy Ocean
   if (estadoPantalla == JUEGO6) {
     if (key == ' ' || key == 'w' || key == 'W' || keyCode == UP) {
       if (juegoTerminadoFlappy) {
