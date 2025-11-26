@@ -10,8 +10,56 @@ PImage iconPulpo, iconDelfin, iconEstrella, iconRobot, iconTortuga, iconCaballo;
 PImage avatarPulpo, avatarDelfin, avatarEstrella, avatarRobot, avatarTortuga, avatarCaballo;
 PImage imagenFondoTablero;
 PImage imagenFondoMenu;
+PImage imagenFondoPanelLateral; // Imagen de fondo para el panel lateral del tablero
 PImage imagenFinJuego;
 PImage[] imagenesCaraDado = new PImage[6];
+// === FUENTE GENERALIZADA ===
+PFont fuentePrincipal; // Variable global para la fuente
+String nombreFuente = "Comic Sans MS"; // Cambiar aquí para usar otra fuente
+
+// === PALETA DE COLORES ACUÁTICOS PARA TEXTOS ===
+// Modifica estos colores para cambiar la paleta de todo el juego
+color colorTituloPrincipal = color(0, 160, 140);         // Verde mar profundo
+color colorTituloSecundario = color(40, 180, 150);       // Verde agua suave
+
+color colorTextoInfo = color(200, 230, 220);             // Verde grisáceo muy claro (no blanco)
+color colorTextoDetalle = color(185, 220, 210);          // Verde espuma claro
+color colorTextoPositivo = color(170, 230, 200);         // Verde menta suave
+color colorTextoNegativo = color(220, 120, 120);         // Coral apagado
+
+color colorTextoAlerta = color(235, 225, 170);           // Arena suave
+color colorTextoInput = color(200, 230, 220);            // Verde grisáceo claro
+color colorTextoBoton = color(200, 230, 220);            // Verde claro suave
+color colorTextoHUD = color(210, 240, 230);              // Verde casi pastel
+
+// === PALETA DE COLORES PARA BOTONES ===
+// Modifica estos colores para cambiar el aspecto de todos los botones
+color colorBotonNormal = color(30, 55, 50);               // Verde grisáceo profundo
+color colorBotonHover = color(70, 150, 130);              // Verde agua iluminado
+color colorBotonHoverAlternativo = color(60, 135, 120);   // Verde marino suave
+color colorBotonNormalAlternativo = color(40, 70, 65);    // Verde grisáceo alternativo
+color colorBotonConfirmar = color(90, 180, 130);          // Verde natural suave
+color colorBotonCancelar = color(200, 80, 80);            // Coral apagado
+color colorBotonVolver = color(140);                      // Gris verdoso neutro
+color colorBotonSeleccionado = color(120, 200, 150);      // Verde claro acuático
+color colorBotonRutaA = color(100, 170, 140);             // Verde agua pastel
+color colorBotonRutaB = color(120, 210, 150);             // Verde menta acuático
+color colorBotonSi = color(130, 210, 140);                // Verde claro suave
+color colorBotonNo = color(220, 120, 120);                // Coral pastel
+color colorBotonVolverKraken = color(10, 70, 60);         // Verde mar profundo
+color colorBotonVolverTablero = color(20, 120, 90);       // Verde océano oscuro
+color colorBotonVolverMenu = color(70, 150, 130);         // Verde agua brillante suave
+
+// === CONFIGURACIÓN DE ESTILO DE BOTONES ===
+// Modifica estos valores para cambiar la apariencia de los botones
+float radioEsquinasBoton = 12.0;          // Radio de las esquinas redondeadas (0 = esquinas cuadradas)
+float grosorBordeBoton = 2.0;             // Grosor del borde de los botones (0 = sin borde)
+color colorBordeBoton = color(255, 255, 255, 80); // Color del borde (con transparencia)
+boolean mostrarSombraBoton = true;        // Mostrar sombra en los botones
+float offsetSombraX = 2.0;                // Desplazamiento X de la sombra
+float offsetSombraY = 2.0;                // Desplazamiento Y de la sombra
+color colorSombraBoton = color(0, 0, 0, 100); // Color de la sombra (con transparencia)
+
 // === AUDIO SIMPLE ===
 import processing.sound.*;
 SoundFile musica;
@@ -28,14 +76,17 @@ PImage iconMusica;
 
 void sonar(SoundFile fx) { if (sonidoActivo && fx != null) { fx.amp(volumenGeneral); fx.play(); } }
 void dibujarAudio() {
-  // Colocar el botón en esquina inferior derecha
-  btnMuteX = width - btnMuteW - 16;
-  btnMuteY = height - btnMuteH - 16;
+  // Solo mostrar en el menú principal
+  if (estadoPantalla != MENU) return;
+  
+  // Colocar el botón en esquina superior izquierda
+  btnMuteX = 16;
+  btnMuteY = 16;
   noStroke(); fill(0,0,0,120);
   rect(btnMuteX-3, btnMuteY-3, btnMuteW+6, btnMuteH+6, 8);
   boolean hov = mouseX>=btnMuteX && mouseX<=btnMuteX+btnMuteW && mouseY>=btnMuteY && mouseY<=btnMuteY+btnMuteH;
-  if (hov) fill(60,180,255); else fill(40,40,60);
-  rect(btnMuteX, btnMuteY, btnMuteW, btnMuteH, 8);
+  if (hov) dibujarBotonEstilizado(btnMuteX, btnMuteY, btnMuteW, btnMuteH, colorBotonHover);
+  else dibujarBotonEstilizado(btnMuteX, btnMuteY, btnMuteW, btnMuteH, colorBotonNormal);
   if (iconMusica != null) {
     image(iconMusica, btnMuteX + 4, btnMuteY + 4, btnMuteW - 8, btnMuteH - 8);
   } else {
@@ -44,6 +95,25 @@ void dibujarAudio() {
     rect(btnMuteX+16, btnMuteY+12, 8, 12);
   }
   if (!sonidoActivo) { stroke(255); strokeWeight(2); line(btnMuteX + 8, btnMuteY + 10, btnMuteX + btnMuteW - 8, btnMuteY + btnMuteH - 10); line(btnMuteX + btnMuteW - 8, btnMuteY + 10, btnMuteX + 8, btnMuteY + btnMuteH - 10); noStroke(); }
+  
+  // Dibujar barra de volumen al lado del botón (no abajo)
+  volW = 140; volH = 10; // Barra más corta
+  volX = btnMuteX + btnMuteW + 12; // Al lado del botón
+  volY = btnMuteY + (btnMuteH - volH) / 2; // Centrada verticalmente con el botón
+  // fondo barra
+  noStroke(); fill(0,0,0,120);
+  rect(volX - 6, volY - 6, volW + 12, volH + 12, 8);
+  // barra
+  fill(70, 70, 90);
+  rect(volX, volY, volW, volH, 6);
+  // relleno según volumen
+  fill(colorBotonHover);
+  rect(volX, volY, int(volumenGeneral * volW), volH, 6);
+  // perilla
+  int knobX = volX + int(volumenGeneral * volW) - 6;
+  int knobY = volY - 6;
+  fill(220);
+  rect(knobX, knobY, 12, volH + 12, 6);
 }
 PImage imagenCasillaSospechosa, imagenCasillaSegura, imagenCasillaNeutral, imagenCasillaSalida, imagenCasillaPregunta, minijuegoTrivia, minijuegoOrden, minijuegoBomba;
 PImage minijuegoNuevo1, minijuegoNuevo2, minijuegoNuevo3;
@@ -103,7 +173,7 @@ int    caraDado = 0;
 int    pasosRestantes = 0;
 boolean animacionEnCurso = false;
 int    ultimoPasoMs = 0;
-int    intervaloPasoMs = 260;
+int    intervaloPasoMs = 400; // Intervalo entre cada movimiento de casilla (aumentado para mejor visibilidad)
 
 boolean esperandoEleccionRuta = false;
 int[]   opcionesRuta = new int[2];
@@ -315,37 +385,40 @@ void dibujarTrivia() {
   if (fondoTrivia != null) image(fondoTrivia, 0, 0, width, height);
   else background(10, 30, 70);
 
-  fill(255);
+  fill(colorTituloPrincipal);
   textAlign(CENTER, CENTER);
-  textSize(36);
+  textSize(40); // Título más grande
   text("Trivias del Abismo", width / 2, 80);
 
   if (!juegoTerminadoTrivia) {
     // Encabezado y pregunta actual
+    fill(colorTituloSecundario);
     textSize(22);
     int numeroAMostrar = min(preguntasContestadas + 1, preguntasMaxTrivia);
     text("Pregunta " + numeroAMostrar + " de " + preguntasMaxTrivia, width / 2, 130);
 
     // Enunciado + opciones
+    fill(colorTextoInfo);
     textAlign(CENTER, CENTER);
     text(preguntasTrivia[preguntaActualTrivia][0], width / 2, 200);
 
     for (int i = 1; i <= 3; i++) {
+      fill(colorTextoDetalle);
       textSize(20);
       text(preguntasTrivia[preguntaActualTrivia][i], width / 2, 240 + i * 36);
     }
 
     // Campo de entrada
-    fill(255);
+    fill(colorTextoAlerta);
     text("Escribe A, B o C y presiona ENTER", width / 2, 420);
     fill(0, 100);
     rect(width / 2 - 100, 440, 200, 44, 8);
-    fill(255);
+    fill(colorTextoInput);
     textSize(22);
     text(respuestaJugador, width / 2, 462);
-    fill(255, 80, 80);
+    fill(colorTextoNegativo);
     text(mensajeInput, width / 2, 510);
-    fill(255);
+    fill(colorTextoPositivo);
     text("Puntaje actual (trivia): " + puntajeTrivia, width / 2, 560);
 
     // Botones Seguir / Salir (solo tras responder)
@@ -356,15 +429,13 @@ void dibujarTrivia() {
       float bw = 180;
       float bh = 50;
 
-      fill(60, 180, 255);            // azul
-      rect(bx, by, bw, bh, 12);
-      fill(255);
+      dibujarBotonEstilizado(bx, by, bw, bh, colorBotonHover);
+      fill(colorTextoBoton);
       textSize(20);
       text("Seguir", bx + bw / 2, by + bh / 2);
 
-      fill(80, 200, 120);            // verde
-      rect(bx + 240, by, bw, bh, 12);
-      fill(255);
+      dibujarBotonEstilizado(bx + 240, by, bw, bh, colorBotonConfirmar);
+      fill(colorTextoBoton);
       text("Salir", bx + 240 + bw / 2, by + bh / 2);
     }
   }
@@ -587,8 +658,13 @@ int TAMANO_CELDA = 50;
 // Posición del jugador
 int posJugadorX;
 int posJugadorY;
-int velocidadJugador = 10;
+int velocidadJugador = 10; // Velocidad del jugador (reducida)
 int radioJugador = 25;
+// Variables para movimiento del jugador (mejora del sistema de teclas)
+boolean teclaArriba = false;
+boolean teclaAbajo = false;
+boolean teclaIzquierda = false;
+boolean teclaDerecha = false;
 
 // Sistema de tentáculos
 int MAX_TENTACULOS = 6;
@@ -596,8 +672,11 @@ int[][] tentaculos = new int[6][2]; // x, y de cada tentáculo
 boolean[] tentaculoActivo = new boolean[6];
 int totalTentaculos = 0;
 int radioTentaculo = 20;
-int velocidadMovimientoTentaculo = 10;
+int velocidadMovimientoTentaculo = 14; // Velocidad aumentada de los tentáculos
 boolean tentaculosInicializados = false;
+PImage[] imagenesTentaculo = new PImage[2]; // Array de imágenes para los tentáculos (opcional)
+int[] tipoImagenTentaculo = new int[6]; // Índice de imagen asignada a cada tentáculo (0 o 1)
+int tamanoHitboxTentaculo = 28; // Tamaño de la hitbox (solo parte inferior)
 
 // Curva de dificultad
 int krakenSpawnCadaMs = 1000;
@@ -643,6 +722,10 @@ float[] brRapida = new float[10];
 // === MINIJUEGO 4: RED DEL ABISMO ===
 PImage fondoLaberinto;
 
+// === MINIJUEGO 6: FLAPPY OCEAN ===
+PImage fondoFlappy;
+PImage imagenTubo;
+
 int filasRed = 10;
 int columnasRed = 14;
 int[][] matrizRed = new int[filasRed][columnasRed];
@@ -661,8 +744,8 @@ boolean ganoLaberinto = false;
 float flappyX = 150; // Posición X fija del jugador
 float flappyY = 300; // Posición Y del jugador
 float flappyVelocidadY = 0; // Velocidad vertical
-float flappyGravedad = 0.6; // Fuerza de gravedad
-float flappyImpulso = -10; // Fuerza del salto
+float flappyGravedad = 1.0; // Fuerza de gravedad (aumentada para caída más rápida)
+float flappyImpulso = -14; // Fuerza del salto (aumentada para subida más rápida)
 int flappyTamaño = 40; // Tamaño del personaje
 
 // Variables de obstáculos (virus verdes)
@@ -674,7 +757,7 @@ float[] obstaculoYInferior = new float[10]; // Posición Y del obstáculo inferi
 int[] obstaculoAncho = new int[10]; // Ancho de cada obstáculo
 int[] obstaculoAlto = new int[10]; // Alto de cada obstáculo
 int huecoAltura = 200; // Altura del hueco entre obstáculos
-float velocidadObstaculos = 3; // Velocidad de desplazamiento de obstáculos
+float velocidadObstaculos = 7; // Velocidad de desplazamiento de obstáculos (aumentada)
 int totalObstaculos = 0; // Contador de obstáculos activos
 boolean[] obstaculoPuntuado = new boolean[10]; // Para evitar contar puntos múltiples veces
 int obstaculosPasados = 0; // Contador de obstáculos pasados exitosamente
@@ -753,12 +836,12 @@ void dibujarLaberinto() {
 int restante = tiempoLimite - (millis() - tiempoInicioLaberinto);
 if (restante < 0) restante = 0;
 
-fill(255);
-textAlign(CENTER, CENTER);
-textSize(22);
-text("⏳ Tiempo restante: " + (restante / 1000) + " s", width / 2, 40);
+  fill(colorTextoHUD);
+  textAlign(CENTER, CENTER);
+  textSize(22);
+  text("⏳ Tiempo restante: " + (restante / 1000) + " s", width / 2, 40);
 
-fill(255, 230, 100);
+  fill(colorTituloSecundario);
 textSize(26);
 // Contador de puntos removido para mejor experiencia
 }
@@ -844,11 +927,12 @@ void inicializarFlappyBird() {
     obstaculoPuntuado[i] = false;
   }
   
-  // Generar los primeros obstáculos
-  int espacioEntreObstaculos = 350; // Espacio entre cada obstáculo
+  // Generar los primeros obstáculos (más cerca del inicio)
+  int espacioEntreObstaculos = 280; // Espacio entre cada obstáculo (reducido para que aparezcan más cerca)
+  int offsetInicial = 200; // Offset para que el primer obstáculo aparezca más cerca
   for (int i = 0; i < totalObstaculosRequeridos; i++) {
     generarObstaculo(i);
-    obstaculoX[i] = width + i * espacioEntreObstaculos; // Espaciarlos horizontalmente
+    obstaculoX[i] = width - offsetInicial + i * espacioEntreObstaculos; // Espaciarlos horizontalmente, más cerca del inicio
     totalObstaculos++;
   }
   
@@ -945,28 +1029,48 @@ void actualizarFlappyBird() {
 
 void dibujarFlappyBird() {
   // Fondo acuático
-  background(20, 60, 120);
-  
-  // Efecto de gradiente acuático
-  for (int i = 0; i < height; i++) {
-    float factor = float(i) / float(height);
-    int r = int(20 + factor * 40);
-    int g = int(60 + factor * 60);
-    int b = int(120 + factor * 80);
-    stroke(r, g, b);
-    line(0, i, width, i);
+  if (fondoFlappy != null) {
+    image(fondoFlappy, 0, 0, width, height);
+  } else {
+    background(20, 60, 120);
+    // Efecto de gradiente acuático (fallback si no hay imagen)
+    for (int i = 0; i < height; i++) {
+      float factor = float(i) / float(height);
+      int r = int(20 + factor * 40);
+      int g = int(60 + factor * 60);
+      int b = int(120 + factor * 80);
+      stroke(r, g, b);
+      line(0, i, width, i);
+    }
+    noStroke();
   }
-  noStroke();
   
-  // Dibujar obstáculos (virus verdes)
-  fill(0, 200, 0); // Verde para los virus
+  // Dibujar obstáculos (tubos con imagen)
+  imageMode(CORNER); // Establecer una vez al inicio
   for (int i = 0; i < totalObstaculos; i++) {
     // Dibujar solo si está visible en pantalla o cerca
     if (obstaculoX[i] > -obstaculoAncho[i] && obstaculoX[i] < width + obstaculoAncho[i]) {
-      // Obstáculo superior
-      rect(obstaculoX[i], obstaculoYSuperior[i], obstaculoAncho[i], obstaculoAlto[i]);
-      // Obstáculo inferior
-      rect(obstaculoX[i], obstaculoYInferior[i], obstaculoAncho[i], height - obstaculoYInferior[i]);
+      if (imagenTubo != null) {
+        // Dibujar tubo superior (reflejado verticalmente para que apunte hacia abajo)
+        // Optimización: usar pushMatrix/popMatrix solo cuando sea necesario
+        pushMatrix();
+        translate(obstaculoX[i] + obstaculoAncho[i] / 2, obstaculoYSuperior[i] + obstaculoAlto[i] / 2);
+        scale(1, -1); // Reflejar verticalmente
+        imageMode(CENTER);
+        image(imagenTubo, 0, 0, obstaculoAncho[i], obstaculoAlto[i]);
+        imageMode(CORNER);
+        popMatrix();
+        
+        // Dibujar tubo inferior (normal, apunta hacia arriba)
+        image(imagenTubo, obstaculoX[i], obstaculoYInferior[i], obstaculoAncho[i], height - obstaculoYInferior[i]);
+      } else {
+        // Fallback: rectángulos verdes si no hay imagen
+        fill(0, 200, 0);
+        // Obstáculo superior
+        rect(obstaculoX[i], obstaculoYSuperior[i], obstaculoAncho[i], obstaculoAlto[i]);
+        // Obstáculo inferior
+        rect(obstaculoX[i], obstaculoYInferior[i], obstaculoAncho[i], height - obstaculoYInferior[i]);
+      }
     }
   }
   
@@ -984,19 +1088,21 @@ void dibujarFlappyBird() {
   }
   
   // Dibujar UI
-  fill(255);
+  fill(colorTextoHUD);
   textAlign(LEFT, TOP);
   textSize(24);
   text("Puntos: " + puntosFlappy, 20, 20);
+  fill(colorTituloSecundario);
   textSize(18);
   text("Obstáculos: " + obstaculosPasados + " / " + totalObstaculosRequeridos, 20, 50);
   
   // Mensaje de inicio
   if (!juegoIniciadoFlappy && !juegoTerminadoFlappy) {
-    fill(255, 255, 255, 200);
+    fill(colorTextoAlerta);
     textAlign(CENTER, CENTER);
     textSize(32);
     text("Presiona ESPACIO o CLIC para comenzar", width / 2, height / 2 - 20);
+    fill(colorTituloSecundario);
     textSize(18);
     text("Pasa las " + totalObstaculosRequeridos + " barras para ganar", width / 2, height / 2 + 10);
     text("Evita los virus verdes", width / 2, height / 2 + 40);
@@ -1008,7 +1114,7 @@ void dibujarFlappyBird() {
       // Mensaje de victoria
       fill(0, 255, 0, 200);
       textAlign(CENTER, CENTER);
-      textSize(36);
+      textSize(42); // Título más grande
       text("¡Victoria!", width / 2, height / 2 - 60);
       textSize(20);
       fill(255, 255, 255, 200);
@@ -1018,7 +1124,7 @@ void dibujarFlappyBird() {
       // Mensaje de game over
       fill(255, 0, 0, 200);
       textAlign(CENTER, CENTER);
-      textSize(36);
+      textSize(42); // Título más grande
       text("¡Game Over!", width / 2, height / 2 - 60);
       textSize(20);
       fill(255, 255, 255, 200);
@@ -1034,9 +1140,12 @@ void dibujarFlappyBird() {
     }
     
     // Botón para volver
-    fill(60, 150, 255, 200);
-    rect(width / 2 - 120, height / 2 + 70, 240, 50, 12);
-    fill(255);
+    pushStyle();
+    color c = color(red(colorBotonHoverAlternativo), green(colorBotonHoverAlternativo), blue(colorBotonHoverAlternativo), 200);
+    fill(c);
+    rect(width / 2 - 120, height / 2 + 70, 240, 50, radioEsquinasBoton);
+    popStyle();
+    fill(colorTextoBoton);
     textSize(18);
     if (flappyDesdeMenu) {
       text("Volver al menú", width / 2, height / 2 + 95);
@@ -1147,6 +1256,8 @@ void krakenSpawn() {
       tentaculos[totalTentaculos][0] = spawnsX[i];
       tentaculos[totalTentaculos][1] = spawnsY[i];
       tentaculoActivo[totalTentaculos] = true;
+      // Asignar aleatoriamente una imagen de tentáculo (0 o 1)
+      tipoImagenTentaculo[totalTentaculos] = int(random(2));
       totalTentaculos = totalTentaculos + 1;
     }
   }
@@ -1165,6 +1276,12 @@ void inicializarMinijuegoKraken() {
   ganoKraken = false;
   krakenPausa = false;
   
+  // Reset variables de movimiento del jugador
+  teclaArriba = false;
+  teclaAbajo = false;
+  teclaIzquierda = false;
+  teclaDerecha = false;
+  
   // Reset sistema de tentáculos
   totalTentaculos = 0;
   tentaculosInicializados = false;
@@ -1172,6 +1289,7 @@ void inicializarMinijuegoKraken() {
     tentaculoActivo[i] = false;
     tentaculos[i][0] = 0;
     tentaculos[i][1] = 0;
+    tipoImagenTentaculo[i] = 0; // Reset del tipo de imagen
   }
   
   // Reset curva de dificultad
@@ -1183,6 +1301,10 @@ void inicializarMinijuegoKraken() {
   bordeActual = 0;
   ultimaPausaMs = 0;
   impactoMs = -1;
+  
+  // Resetear shake para evitar que se quede aplicado
+  shakeX = 0;
+  shakeY = 0;
   
   // Inicializar estela
   for (int i = 0; i < MAX_TRAIL; i = i + 1) {
@@ -1249,22 +1371,39 @@ void dibujarLuzJugador(int cx, int cy, int radioMax) {
 }
 
 // Dibujar tentáculo con pulso
-void dibujarTentaculo(int x, int y, int tiempo) {
+void dibujarTentaculo(int x, int y, int tiempo, int indiceTentaculo) {
   float fase = float(x + y) * 0.01;
   float radioBase = 12;
   float amplitud = 2;
   float frecuencia = 0.008;
   float radioPulso = radioBase + sin(tiempo * frecuencia + fase) * amplitud;
   
-  stroke(60, 0, 0);
-  strokeWeight(3);
-  fill(190, 20, 30);
-  ellipse(x, y, radioPulso * 2, radioPulso * 2);
+  // Obtener el índice de imagen asignado a este tentáculo
+  int tipoImagen = tipoImagenTentaculo[indiceTentaculo];
   
-  // Punto especular
-  noStroke();
-  fill(255, 255, 255, 180);
-  ellipse(x - 4, y - 4, 6, 6);
+  // Si hay imagen de tentáculo disponible, usarla; si no, dibujar forma básica
+  if (tipoImagen >= 0 && tipoImagen < imagenesTentaculo.length && imagenesTentaculo[tipoImagen] != null) {
+    pushMatrix();
+    translate(x, y);
+    // Escalar la imagen al doble del tamaño
+    imageMode(CENTER);
+    float escala = 2.0; // Doble del tamaño
+    image(imagenesTentaculo[tipoImagen], 0, 0, imagenesTentaculo[tipoImagen].width * escala, imagenesTentaculo[tipoImagen].height * escala);
+    // Restaurar imageMode a CORNER después de usar CENTER
+    imageMode(CORNER);
+    popMatrix();
+  } else {
+    // Si no hay imagen, también duplicar el tamaño del círculo
+    stroke(60, 0, 0);
+    strokeWeight(3);
+    fill(190, 20, 30);
+    ellipse(x, y, radioPulso * 4, radioPulso * 4); // Doble del tamaño
+    
+    // Punto especular
+    noStroke();
+    fill(255, 255, 255, 180);
+    ellipse(x - 8, y - 8, 12, 12); // También más grande
+  }
 }
 
 // Actualizar estela del jugador
@@ -1394,9 +1533,9 @@ void dibujarTarjetaAvatar(int x, int y, int w, int h, int idx, boolean hover, bo
   if (tomado) {
     fill(30, 30, 40);
   } else if (seleccionado) {
-    fill(60, 150, 255);
+    fill(colorBotonHoverAlternativo);
   } else if (hover) {
-    fill(80, 170, 240);
+    fill(colorBotonHover);
   } else {
     fill(40, 60, 90);
   }
@@ -1435,7 +1574,7 @@ void dibujarTarjetaAvatar(int x, int y, int w, int h, int idx, boolean hover, bo
     image(spritesAv[idx], spriteX, spriteY, spriteW, spriteH);
   }
   
-  fill(255);
+  fill(colorTituloPrincipal);
   textAlign(CENTER, CENTER);
   textSize(18);
   text(nombresAv[idx], x + w/2, y + h - 30);
@@ -1449,7 +1588,7 @@ void dibujarTarjetaAvatar(int x, int y, int w, int h, int idx, boolean hover, bo
     textSize(24);
     text("🔒", x + w/2, y + h/2);
     
-    fill(200, 100, 100);
+    fill(colorTextoNegativo);
     textSize(14);
     text("Tomado", x + w/2, y + h - 50);
   }
@@ -1485,12 +1624,12 @@ void dibujarPreview(int idx) {
     image(spritesAv[idx], spriteX, spriteY, spriteW, spriteH);
   }
   
-  fill(255);
+  fill(colorTituloPrincipal);
   textAlign(CENTER, CENTER);
   textSize(24);
   text(nombresAv[idx], previewX + previewW/2, previewY + 300);
   
-  fill(200, 220, 255);
+  fill(colorTituloSecundario);
   textSize(14);
   text("Clic para seleccionar", previewX + previewW/2, previewY + 330);
   text("y avanzar al siguiente jugador.", previewX + previewW/2, previewY + 350);
@@ -1524,14 +1663,13 @@ void dibujarSeleccionAvatar() {
   
   dibujarVineta();
   
-  fill(255);
+  fill(colorTituloPrincipal);
   textAlign(CENTER, CENTER);
-  textSize(42);
-  fill(255, 220, 100);
+  textSize(48); // Título más grande
   text("Elige tu personaje", width/2, 80);
   
   textSize(28);
-  fill(255);
+  fill(colorTituloSecundario);
   text("— Jugador " + (jugadorActivo + 1) + " —", width/2, 130);
   
   int cardW = 200;
@@ -1581,15 +1719,12 @@ void dibujarSeleccionAvatar() {
   }
   
   if (hayElecciones) {
-    fill(200, 120, 80);
+    dibujarBotonEstilizado(botonAtrasX, botonAtrasY, botonAtrasW, botonAtrasH, colorBotonCancelar);
   } else {
-    fill(120, 120, 140);
+    dibujarBotonEstilizado(botonAtrasX, botonAtrasY, botonAtrasW, botonAtrasH, colorBotonNormalAlternativo);
   }
   
-  noStroke();
-  rect(botonAtrasX, botonAtrasY, botonAtrasW, botonAtrasH, 12);
-  
-  fill(255);
+  fill(colorTextoBoton);
   textAlign(CENTER, CENTER);
   textSize(20);
   if (hayElecciones) {
@@ -1605,11 +1740,14 @@ void dibujarHUD(int tiempoRestante) {
   noStroke();
   rect(20, 20, 280, 100, 10);
   
-  fill(255);
+  // Colores acuáticos brillantes para visibilidad
+  fill(colorTextoHUD);
   textAlign(LEFT, TOP);
   textSize(14);
   text("Flechas: mover | Evita tentáculos", 24, 24);
+  fill(colorTituloSecundario);
   text("Tiempo: " + (tiempoRestante / 1000) + " s", 24, 48);
+  fill(colorTextoInfo);
   text("Puntos: " + int(puntosJugador[jugadorActivo]), 24, 72);
 }
 
@@ -1643,7 +1781,7 @@ void dibujarMinijuegoKraken() {
   
   // Mostrar pausa si está activa
   if (krakenPausa) {
-    popMatrix();
+    popMatrix(); // Asegurar que se cierre el pushMatrix antes de salir
     fill(255, 255, 0);
     textAlign(CENTER, CENTER);
     textSize(48);
@@ -1667,13 +1805,42 @@ void dibujarMinijuegoKraken() {
     krakenSpawn();
   }
   
-  // Movimiento del jugador con flechas
+  // Movimiento del jugador con flechas (sistema mejorado usando eventos)
   if (!jugadorAtrapado && !minijuegoKrakenTerminado) {
-    if (keyPressed) {
-      if (keyCode == UP && posJugadorY > radioJugador) posJugadorY = posJugadorY - velocidadJugador;
-      if (keyCode == DOWN && posJugadorY < height - radioJugador) posJugadorY = posJugadorY + velocidadJugador;
-      if (keyCode == LEFT && posJugadorX > radioJugador) posJugadorX = posJugadorX - velocidadJugador;
-      if (keyCode == RIGHT && posJugadorX < width - radioJugador) posJugadorX = posJugadorX + velocidadJugador;
+    // Calcular dirección del movimiento
+    float dx = 0;
+    float dy = 0;
+    
+    if (teclaArriba && posJugadorY > radioJugador) {
+      dy -= 1;
+    }
+    if (teclaAbajo && posJugadorY < height - radioJugador) {
+      dy += 1;
+    }
+    if (teclaIzquierda && posJugadorX > radioJugador) {
+      dx -= 1;
+    }
+    if (teclaDerecha && posJugadorX < width - radioJugador) {
+      dx += 1;
+    }
+    
+    // Normalizar el vector de movimiento para que la velocidad diagonal sea igual a la lineal
+    float magnitud = sqrt(dx * dx + dy * dy);
+    if (magnitud > 0) {
+      dx = (dx / magnitud) * velocidadJugador;
+      dy = (dy / magnitud) * velocidadJugador;
+      
+      // Aplicar movimiento normalizado
+      float nuevoX = posJugadorX + dx;
+      float nuevoY = posJugadorY + dy;
+      
+      // Verificar límites antes de actualizar
+      if (nuevoX >= radioJugador && nuevoX <= width - radioJugador) {
+        posJugadorX = (int)nuevoX;
+      }
+      if (nuevoY >= radioJugador && nuevoY <= height - radioJugador) {
+        posJugadorY = (int)nuevoY;
+      }
     }
     
     // Actualizar estela
@@ -1686,7 +1853,7 @@ void dibujarMinijuegoKraken() {
   // 4. DIBUJAR TENTÁCULOS CON PULSO
   for (int i = 0; i < totalTentaculos; i = i + 1) {
     if (tentaculoActivo[i]) {
-      dibujarTentaculo(tentaculos[i][0], tentaculos[i][1], tiempoActual);
+      dibujarTentaculo(tentaculos[i][0], tentaculos[i][1], tiempoActual, i);
     }
   }
   
@@ -1713,28 +1880,48 @@ void dibujarMinijuegoKraken() {
     }
   }
   
-  // Verificación de colisión usando dist2
+  // Verificación de colisión usando solo la parte inferior del tentáculo (28x28)
   if (!jugadorAtrapado && !minijuegoKrakenTerminado) {
     int centroJugadorX = posJugadorX;
     int centroJugadorY = posJugadorY;
-    int sumaRadios = radioJugador + radioTentaculo;
-    int sumaRadios2 = sumaRadios * sumaRadios;
+    int mitadHitbox = tamanoHitboxTentaculo / 2;
     
     for (int i = 0; i < totalTentaculos; i = i + 1) {
       if (tentaculoActivo[i]) {
-        int centroTentaculoX = tentaculos[i][0];
-        int centroTentaculoY = tentaculos[i][1];
+        // La hitbox está en la parte inferior del tentáculo (28x28)
+        // El centro de la hitbox está en la parte inferior de la imagen
+        int centroHitboxX = tentaculos[i][0];
+        int centroHitboxY = tentaculos[i][1];
         
-        int dx = centroJugadorX - centroTentaculoX;
-        int dy = centroJugadorY - centroTentaculoY;
-        int dist2 = dx * dx + dy * dy;
+        // Si hay imagen, ajustar el centro de la hitbox hacia la parte inferior
+        int tipoImagen = tipoImagenTentaculo[i];
+        if (tipoImagen >= 0 && tipoImagen < imagenesTentaculo.length && imagenesTentaculo[tipoImagen] != null) {
+          // La imagen se dibuja con imageMode(CENTER), así que tentaculos[i][0/1] es el centro de la imagen
+          // La hitbox de 28x28 está en la parte inferior, así que movemos el centro hacia abajo
+          int alturaImagen = imagenesTentaculo[tipoImagen].height;
+          // El centro de la hitbox está en: centroY + (altura/2) - (tamanoHitbox/2)
+          centroHitboxY = tentaculos[i][1] + (alturaImagen / 2) - mitadHitbox;
+        }
         
-        if (dist2 <= sumaRadios2) {
-          jugadorAtrapado = true;
-          minijuegoKrakenTerminado = true;
-          ganoKraken = false;
-          impactoMs = millis();
-          break;
+        // Verificar colisión: jugador vs hitbox cuadrada del tentáculo (28x28)
+        // Usamos distancia Manhattan para hitbox cuadrada (más eficiente)
+        int dx = abs(centroJugadorX - centroHitboxX);
+        int dy = abs(centroJugadorY - centroHitboxY);
+        
+        // Colisión si el jugador está dentro del área de la hitbox + su radio
+        if (dx <= (mitadHitbox + radioJugador) && dy <= (mitadHitbox + radioJugador)) {
+          // Verificación más precisa con distancia euclidiana
+          int dist2 = dx * dx + dy * dy;
+          int sumaRadios = radioJugador + mitadHitbox;
+          int sumaRadios2 = sumaRadios * sumaRadios;
+          
+          if (dist2 <= sumaRadios2) {
+            jugadorAtrapado = true;
+            minijuegoKrakenTerminado = true;
+            ganoKraken = false;
+            impactoMs = millis();
+            break;
+          }
         }
       }
     }
@@ -1744,6 +1931,8 @@ void dibujarMinijuegoKraken() {
   dibujarEstela();
   
   // 6. DIBUJAR JUGADOR
+  // Asegurar que imageMode esté en CORNER antes de dibujar el jugador
+  imageMode(CORNER);
   if (imagenesJugador[jugadorActivo] != null) {
     image(imagenesJugador[jugadorActivo], posJugadorX - radioJugador, posJugadorY - radioJugador, radioJugador * 2, radioJugador * 2);
   } else {
@@ -1752,8 +1941,11 @@ void dibujarMinijuegoKraken() {
     ellipse(posJugadorX, posJugadorY, radioJugador * 2, radioJugador * 2);
   }
   
-  // Finalizar shake
+  // Finalizar shake - SIEMPRE ejecutar popMatrix antes de salir
   popMatrix();
+  
+  // Asegurar que imageMode vuelva a CORNER después de salir del juego del Kraken
+  imageMode(CORNER);
   
   // 7. HUD y efectos finales
   int tiempoRestante = duracionKraken - tiempoTranscurrido;
@@ -1768,18 +1960,18 @@ void dibujarMinijuegoKraken() {
   if (jugadorAtrapado) {
     minijuegoKrakenTerminado = true;
     ganoKraken = false;
-    fill(255, 50, 50);
+    fill(colorTextoNegativo);
     textAlign(CENTER, CENTER);
-    textSize(36);
+    textSize(42); // Título más grande
     text("¡El Kraken te atrapó!", width/2, height/2 - 40);
     mostrarBotonVolverKraken();
   } else {
     if (tiempoRestante <= 0) {
       minijuegoKrakenTerminado = true;
       ganoKraken = true;
-      fill(80, 255, 120);
+      fill(colorTextoPositivo);
       textAlign(CENTER, CENTER);
-      textSize(36);
+      textSize(42); // Título más grande
       text("¡Sobreviviste al Kraken!", width/2, height/2 - 40);
       mostrarBotonVolverKraken();
     }
@@ -1787,9 +1979,8 @@ void dibujarMinijuegoKraken() {
 }
 
 void mostrarBotonVolverKraken() {
-  fill(0, 100, 255);
-  rect(width/2 - 80, height/2 + 60, 160, 50, 12);
-  fill(255);
+  dibujarBotonEstilizado(width/2 - 80, height/2 + 60, 160, 50, colorBotonVolverKraken);
+  fill(colorTextoBoton);
   textSize(20);
   textAlign(CENTER, CENTER);
   text("Volver al tablero", width/2, height/2 + 85);
@@ -1804,9 +1995,16 @@ void settings() {
 }
 
 void setup() {
+  frameRate(60); // Aumentar frame rate a 60 FPS para mejor rendimiento
   inicializarCasillas();
 imagenFondoMenu = loadImage("fondo_menu.jpg");
   imagenFondoTablero = loadImage("fondo.png");
+  // Cargar imagen de fondo del panel lateral (opcional, si no existe se usará color sólido)
+  try {
+    imagenFondoPanelLateral = loadImage("panel_lateral.png");
+  } catch (Exception e) {
+    imagenFondoPanelLateral = null; // Si no existe, se usará el color sólido
+  }
   for (int i = 0; i < 6; i = i + 1) imagenesCaraDado[i] = loadImage("dado" + (i + 1) + ".png");
   imagenCasillaSospechosa = loadImage("sospechosa.png");
   imagenCasillaSegura     = loadImage("segura.png");
@@ -1821,6 +2019,8 @@ imagenFondoMenu = loadImage("fondo_menu.jpg");
 imagenFinJuego = loadImage("fondo_ataque.jpg");
 fondoKraken = loadImage("fondo_kraken.jpg");
 fondoOrden = loadImage("fondo_corriente.jpg");
+  fondoFlappy = loadImage("fondo_flappy.jpg");
+  imagenTubo = loadImage("tubo.png");
  iconPulpo   = loadImage("jugador_1.png");
   iconDelfin  = loadImage("jugador_2.png");
   iconEstrella= loadImage("jugador_3.png");
@@ -1840,7 +2040,7 @@ fondoOrden = loadImage("fondo_corriente.jpg");
     tempLuis.resize(250, 300);
     fotoLuis = tempLuis;
   }
-  PImage tempJoel = loadImage("joel.jpg");
+  PImage tempJoel = loadImage("joel.jpeg");
   if (tempJoel != null) {
     tempJoel.resize(250, 300);
     fotoJoel = tempJoel;
@@ -1853,10 +2053,30 @@ fondoOrden = loadImage("fondo_corriente.jpg");
   spritesAv[4] = iconTortuga;
   spritesAv[5] = iconCaballo;
   
-  // === Imágenes de casillas para minijuegos 4 y 5 ===
+  // === Imágenes de casillas para minijuegos 4, 5 y 6 ===
 minijuegoNuevo1 = loadImage("laberinto.png"); // JUEGO4
 minijuegoNuevo2 = loadImage("rey.png");       // JUEGO5
-minijuegoNuevo3 = loadImage("neutral.png"); //JUEGO EN DESARROLLO
+minijuegoNuevo3 = loadImage("flappy.png");    // JUEGO6 - Flappy Ocean
+  
+  // === Cargar imágenes de tentáculos (opcional, si existen) ===
+  try {
+    imagenesTentaculo[0] = loadImage("tentaculo.png");
+  } catch (Exception e) {
+    imagenesTentaculo[0] = null; // Si no existe, se usará el dibujo básico
+  }
+  try {
+    imagenesTentaculo[1] = loadImage("tentaculo_2.png");
+  } catch (Exception e) {
+    imagenesTentaculo[1] = null; // Si no existe, se usará el dibujo básico
+  }
+  
+  // === Cargar fuente ===
+  try {
+    fuentePrincipal = createFont(nombreFuente, 18);
+    textFont(fuentePrincipal);
+  } catch (Exception e) {
+    println("[FUENTE] No se pudo cargar la fuente '" + nombreFuente + "', usando fuente por defecto");
+  }
 
   textAlign(CENTER, CENTER);
   textSize(18);
@@ -2043,18 +2263,7 @@ void dibujarCasillas() {
       rect(x + dx, y + dy, w, h, 8);
     }
 
-    // Dibujar número de casilla
-    float centroX = x + dx + w * 0.5;
-    float centroY = y + dy + h * 0.5;
-
-    pushStyle();
-    textAlign(CENTER, CENTER);
-    textSize(14);
-    fill(0);
-    text(i, centroX + 1, centroY + 1);
-    fill(255);
-    text(i, centroX, centroY);
-    popStyle();
+    // Números de casilla removidos según solicitud del usuario
   }
 }
 
@@ -2394,6 +2603,38 @@ void mostrarMensaje(String texto, int duracionMs) {
 }
 
 // ========================================
+// SUBRUTINA: dibujarBotonEstilizado(float x, float y, float w, float h, color colorBoton)
+// ========================================
+// Dibuja un botón con estilo personalizado (sombra, borde, esquinas redondeadas)
+// Si el color tiene transparencia (alpha < 255), se respeta
+void dibujarBotonEstilizado(float x, float y, float w, float h, color colorBoton) {
+  pushStyle();
+  
+  // Extraer alpha del color
+  int alpha = (colorBoton >> 24) & 0xFF;
+  if (alpha == 0) alpha = 255; // Si no tiene alpha, usar 255
+  
+  // Dibujar sombra si está habilitada (solo si el botón no es transparente)
+  if (mostrarSombraBoton && alpha == 255) {
+    fill(colorSombraBoton);
+    noStroke();
+    rect(x + offsetSombraX, y + offsetSombraY, w, h, radioEsquinasBoton);
+  }
+  
+  // Dibujar el botón
+  fill(colorBoton);
+  if (grosorBordeBoton > 0 && alpha == 255) {
+    stroke(colorBordeBoton);
+    strokeWeight(grosorBordeBoton);
+  } else {
+    noStroke();
+  }
+  rect(x, y, w, h, radioEsquinasBoton);
+  
+  popStyle();
+}
+
+// ========================================
 // LOOP PRINCIPAL
 // ========================================
 
@@ -2407,9 +2648,9 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   fill(0, 120);
   rect(0, 0, width, height);
 
-  fill(255);
+  fill(colorTituloPrincipal);
   textAlign(CENTER, CENTER);
-  textSize(42);
+  textSize(48); // Título más grande
   text("UnderWater: The Next Step", width/2, 120);
 
   int altoTotal = etiquetasMenuPrincipal.length * altoBotonMenu + (etiquetasMenuPrincipal.length - 1) * espacioEntreBotonesMenu;
@@ -2425,11 +2666,10 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
       mouseY >= posicionBotonY && mouseY <= posicionBotonY + altoBotonMenu;
     if (punteroSobreBoton) indiceBotonHover = indice;
 
-    if (punteroSobreBoton) fill(60, 180, 255);
-    else fill(40, 40, 60);
-    rect(posicionBotonX, posicionBotonY, anchoBotonMenu, altoBotonMenu, 14);
+    if (punteroSobreBoton) dibujarBotonEstilizado(posicionBotonX, posicionBotonY, anchoBotonMenu, altoBotonMenu, colorBotonHover);
+    else dibujarBotonEstilizado(posicionBotonX, posicionBotonY, anchoBotonMenu, altoBotonMenu, colorBotonNormal);
 
-    fill(255);
+    fill(colorTextoBoton);
     textSize(22);
     text(etiquetasMenuPrincipal[indice], posicionBotonX + anchoBotonMenu/2, posicionBotonY + altoBotonMenu/2);
   }
@@ -2441,9 +2681,9 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     rect(0, 0, width, height);
     
     // Título
-    fill(255);
+    fill(colorTituloPrincipal);
     textAlign(CENTER, CENTER);
-    textSize(36);
+    textSize(42); // Título más grande
     text("Créditos", width / 2, 80);
     
     // Activar suavizado para mejor calidad de imagen
@@ -2462,15 +2702,16 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     } else {
       fill(100, 150, 255);
       rect(inicioX, inicioYCreditos, anchoFoto, altoFoto);
-      fill(255);
+      fill(135, 206, 255); // Azul cielo
       textSize(24);
       textAlign(CENTER, CENTER);
       text("?", inicioX + anchoFoto/2, inicioYCreditos + altoFoto/2);
     }
-    fill(255);
+    fill(colorTituloPrincipal);
     textSize(18);
     textAlign(CENTER, TOP);
     text("Oscar Velez", inicioX + anchoFoto/2, inicioYCreditos + altoFoto + 10);
+    fill(colorTituloSecundario);
     textSize(14);
     text("Gerente", inicioX + anchoFoto/2, inicioYCreditos + altoFoto + 35);
     
@@ -2480,15 +2721,16 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     } else {
       fill(100, 150, 255);
       rect(inicioX + anchoFoto + espacioEntreFotos, inicioYCreditos, anchoFoto, altoFoto);
-      fill(255);
+      fill(135, 206, 255); // Azul cielo
       textSize(24);
       textAlign(CENTER, CENTER);
       text("?", inicioX + anchoFoto + espacioEntreFotos + anchoFoto/2, inicioYCreditos + altoFoto/2);
     }
-    fill(255);
+    fill(colorTituloPrincipal);
     textSize(18);
     textAlign(CENTER, TOP);
     text("Luis Villarreal", inicioX + anchoFoto + espacioEntreFotos + anchoFoto/2, inicioYCreditos + altoFoto + 10);
+    fill(colorTituloSecundario);
     textSize(14);
     text("Desarrollador", inicioX + anchoFoto + espacioEntreFotos + anchoFoto/2, inicioYCreditos + altoFoto + 35);
     
@@ -2498,15 +2740,16 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     } else {
       fill(100, 150, 255);
       rect(inicioX + 2 * (anchoFoto + espacioEntreFotos), inicioYCreditos, anchoFoto, altoFoto);
-      fill(255);
+      fill(135, 206, 255); // Azul cielo
       textSize(24);
       textAlign(CENTER, CENTER);
       text("?", inicioX + 2 * (anchoFoto + espacioEntreFotos) + anchoFoto/2, inicioYCreditos + altoFoto/2);
     }
-    fill(255);
+    fill(colorTituloPrincipal);
     textSize(18);
     textAlign(CENTER, TOP);
     text("Joel Trespalacios", inicioX + 2 * (anchoFoto + espacioEntreFotos) + anchoFoto/2, inicioYCreditos + altoFoto + 10);
+    fill(colorTituloSecundario);
     textSize(14);
     text("Diseñador", inicioX + 2 * (anchoFoto + espacioEntreFotos) + anchoFoto/2, inicioYCreditos + altoFoto + 35);
     
@@ -2514,44 +2757,27 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     int cerrarBotonX = width - 170, cerrarBotonY = 100, cerrarBotonAncho = 120, cerrarBotonAlto = 45;
     boolean hoverCerrar = mouseX >= cerrarBotonX && mouseX <= cerrarBotonX + cerrarBotonAncho &&
                           mouseY >= cerrarBotonY && mouseY <= cerrarBotonY + cerrarBotonAlto;
-    if (hoverCerrar) fill(60, 150, 255);
-    else fill(40, 60, 90);
-    rect(cerrarBotonX, cerrarBotonY, cerrarBotonAncho, cerrarBotonAlto, 12);
-    fill(255);
+    if (hoverCerrar) dibujarBotonEstilizado(cerrarBotonX, cerrarBotonY, cerrarBotonAncho, cerrarBotonAlto, colorBotonHoverAlternativo);
+    else dibujarBotonEstilizado(cerrarBotonX, cerrarBotonY, cerrarBotonAncho, cerrarBotonAlto, colorBotonNormalAlternativo);
+    fill(colorTextoBoton);
     textSize(18);
     textAlign(CENTER, CENTER);
     text("Cerrar", cerrarBotonX + cerrarBotonAncho/2, cerrarBotonY + cerrarBotonAlto/2);
   } else {
     textSize(14);
-    fill(200);
+    fill(colorTituloSecundario);
     text("Haz clic en un botón", width/2, height - 36);
   }
   
-  // Slider de volumen (solo en menú)
-  volW = 220; volH = 10;
-  volX = width - volW - 20; volY = height - 80;
-  // fondo barra
-  noStroke(); fill(0,0,0,120);
-  rect(volX - 6, volY - 6, volW + 12, volH + 12, 8);
-  // barra
-  fill(70, 70, 90);
-  rect(volX, volY, volW, volH, 6);
-  // relleno según volumen
-  fill(60, 180, 255);
-  rect(volX, volY, int(volumenGeneral * volW), volH, 6);
-  // perilla
-  int knobX = volX + int(volumenGeneral * volW) - 6;
-  int knobY = volY - 6;
-  fill(220);
-  rect(knobX, knobY, 12, volH + 12, 6);
-
-  // actualizar volumen si está arrastrando
-  if (volumenArrastrando && mousePressed) {
+  // Dibujar controles de audio (botón y barra de volumen) - solo en menú
+  dibujarAudio();
+  
+  // Actualizar volumen si está arrastrando (solo en menú)
+  if (estadoPantalla == MENU && volumenArrastrando && mousePressed) {
     float r = constrain((mouseX - volX) / float(volW), 0, 1);
     volumenGeneral = r;
     if (musica != null) musica.amp(sonidoActivo ? volumenGeneral : 0);
   }
-  dibujarAudio();
   
   
   // === INSTRUCCIONES ===
@@ -2575,9 +2801,9 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     rect(80, 80, width - 160, height - 160, 20);
     
     // Título del submenú
-    fill(255);
+    fill(colorTituloPrincipal);
     textAlign(CENTER, CENTER);
-    textSize(32);
+    textSize(38); // Título más grande
     String tituloSubmenu = "";
     String textoExplicacion = "";
     
@@ -2651,7 +2877,7 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     text(tituloSubmenu, width / 2, 130);
     
     // Texto de explicación
-    fill(220);
+    fill(colorTituloSecundario);
     textSize(16);
     textLeading(28);
     text(textoExplicacion, width / 2, height / 2);
@@ -2660,27 +2886,26 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     int cerrarBotonX = width - 170, cerrarBotonY = 100, cerrarBotonAncho = 120, cerrarBotonAlto = 45;
     boolean hoverCerrar = mouseX >= cerrarBotonX && mouseX <= cerrarBotonX + cerrarBotonAncho &&
                           mouseY >= cerrarBotonY && mouseY <= cerrarBotonY + cerrarBotonAlto;
-    if (hoverCerrar) fill(60, 150, 255);
-    else fill(40, 60, 90);
-    rect(cerrarBotonX, cerrarBotonY, cerrarBotonAncho, cerrarBotonAlto, 12);
-    fill(255);
+    if (hoverCerrar) dibujarBotonEstilizado(cerrarBotonX, cerrarBotonY, cerrarBotonAncho, cerrarBotonAlto, colorBotonHoverAlternativo);
+    else dibujarBotonEstilizado(cerrarBotonX, cerrarBotonY, cerrarBotonAncho, cerrarBotonAlto, colorBotonNormalAlternativo);
+    fill(colorTextoBoton);
     textSize(18);
     text("Cerrar", cerrarBotonX + cerrarBotonAncho/2, cerrarBotonY + cerrarBotonAlto/2);
     
   } else {
     // Menú principal con 10 botones
     // Título
-    fill(255);
+    fill(colorTituloPrincipal);
     textAlign(CENTER, CENTER);
-    textSize(36);
+    textSize(42); // Título más grande
     text("Instrucciones", width / 2, 100);
     
-    // Configuración de botones
+    // Configuración de botones - 2 filas de 5 botones
     int tamanoBoton = 100;
     int espacioEntreBotones = 30;
-    int inicioX = (width - (3 * tamanoBoton + 2 * espacioEntreBotones)) / 2;
-    int inicioY = 150; // Subido para que no se salga de la ventana
-    int espacioVertical = 130; // Reducido un poco para que quepa mejor
+    int inicioX = (width - (5 * tamanoBoton + 4 * espacioEntreBotones)) / 2;
+    int inicioY = 150;
+    int espacioVertical = 160;
     
     // Nombres de los juegos y casillas
     String[] nombresJuegos = {"Información General", "Trivia del Abismo", "Corriente Desordenada", 
@@ -2690,26 +2915,21 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
                                minijuegoNuevo1, minijuegoNuevo2, minijuegoNuevo3,
                                imagenCasillaSegura, imagenCasillaSospechosa, imagenCasillaNeutral};
     
-    // Dibujar 10 botones en grid 3x4
+    // Dibujar 10 botones en grid 5x2 (2 filas de 5)
     for (int i = 0; i < 10; i++) {
-      int fila = i / 3;
-      int columna = i % 3;
-      int x;
-      // Si es la última casilla (índice 9), centrarla
-      if (i == 9) {
-        x = (width - tamanoBoton) / 2; // Centrada
-      } else {
-        x = inicioX + columna * (tamanoBoton + espacioEntreBotones);
-      }
+      int fila = i / 5;
+      int columna = i % 5;
+      int x = inicioX + columna * (tamanoBoton + espacioEntreBotones);
       int y = inicioY + fila * espacioVertical;
       
       boolean hover = mouseX >= x && mouseX <= x + tamanoBoton &&
                      mouseY >= y && mouseY <= y + tamanoBoton + 30;
       
       // Botón con imagen
-      if (hover) fill(60, 180, 255, 180);
-      else fill(40, 40, 60, 200);
-      rect(x - 5, y - 5, tamanoBoton + 10, tamanoBoton + 10, 12);
+      color colorBotonHoverTrans = color(red(colorBotonHover), green(colorBotonHover), blue(colorBotonHover), 180);
+      color colorBotonNormalTrans = color(red(colorBotonNormal), green(colorBotonNormal), blue(colorBotonNormal), 200);
+      if (hover) dibujarBotonEstilizado(x - 5, y - 5, tamanoBoton + 10, tamanoBoton + 10, colorBotonHoverTrans);
+      else dibujarBotonEstilizado(x - 5, y - 5, tamanoBoton + 10, tamanoBoton + 10, colorBotonNormalTrans);
       
       // Imagen de la casilla
       if (imagenesJuegos[i] != null) {
@@ -2724,7 +2944,7 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
       }
       
       // Nombre del juego abajo
-      fill(255);
+      fill(colorTituloSecundario);
       textSize(14);
       textAlign(CENTER, TOP);
       text(nombresJuegos[i], x + tamanoBoton/2, y + tamanoBoton + 8);
@@ -2735,14 +2955,12 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   int volverBotonX = 30, volverBotonY = 24, volverBotonAncho = 140, volverBotonAlto = 48;
   boolean hoverVolver = mouseX >= volverBotonX && mouseX <= volverBotonX + volverBotonAncho &&
                        mouseY >= volverBotonY && mouseY <= volverBotonY + volverBotonAlto;
-  if (hoverVolver) fill(60, 150, 255);
-  else fill(40, 60, 90);
-  noStroke();
-  rect(volverBotonX, volverBotonY, volverBotonAncho, volverBotonAlto, 12);
-  fill(255);
+  if (hoverVolver) dibujarBotonEstilizado(volverBotonX, volverBotonY, volverBotonAncho, volverBotonAlto, colorBotonHoverAlternativo);
+  else dibujarBotonEstilizado(volverBotonX, volverBotonY, volverBotonAncho, volverBotonAlto, colorBotonNormalAlternativo);
+  fill(colorTextoBoton);
   textSize(18);
   textAlign(CENTER, CENTER);
-  text("← Volver", volverBotonX + volverBotonAncho/2, volverBotonY + volverBotonAlto/2);
+  text("Volver", volverBotonX + volverBotonAncho/2, volverBotonY + volverBotonAlto/2);
   
   dibujarAudio();
 
@@ -2755,9 +2973,9 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   fill(0, 140);
   rect(0, 0, width, height);
 
-  fill(255);
+  fill(colorTituloPrincipal);
   textAlign(CENTER, CENTER);
-  textSize(36);
+  textSize(42); // Título más grande
   text("Elige número de jugadores", width/2, 140);
 
   int anchoBotonSeleccion = 80, altoBotonSeleccion = 80, espacioEntreOpciones = 40;
@@ -2772,18 +2990,19 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
       mouseX >= posicionXOpcion && mouseX <= posicionXOpcion + anchoBotonSeleccion &&
       mouseY >= posicionYOpciones && mouseY <= posicionYOpciones + altoBotonSeleccion;
 
-    if (valorCantidadJugadores == jugadoresSeleccionados) fill(70, 200, 120);
-    else if (punteroSobreOpcion)                          fill(60, 180, 255);
-    else                                                  fill(40, 40, 60);
+    color colorBotonActual;
+    if (valorCantidadJugadores == jugadoresSeleccionados) colorBotonActual = colorBotonSeleccionado;
+    else if (punteroSobreOpcion)                          colorBotonActual = colorBotonHover;
+    else                                                  colorBotonActual = colorBotonNormal;
 
-    rect(posicionXOpcion, posicionYOpciones, anchoBotonSeleccion, altoBotonSeleccion, 16);
-    fill(255);
+    dibujarBotonEstilizado(posicionXOpcion, posicionYOpciones, anchoBotonSeleccion, altoBotonSeleccion, colorBotonActual);
+    fill(colorTextoBoton);
     textSize(28);
     text(valorCantidadJugadores, posicionXOpcion + anchoBotonSeleccion/2, posicionYOpciones + altoBotonSeleccion/2);
   }
 
   textSize(26);
-  fill(255);
+  fill(colorTituloSecundario);
   text("Escribe rondas", width/2, posicionYOpciones + altoBotonSeleccion + 36);
 
   int anchoCampoRondas = 220;
@@ -2795,7 +3014,7 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   if (campoRondasActivo) fill(255); else fill(230);
   rect(campoRondasX, campoRondasY, anchoCampoRondas, altoCampoRondas, 10);
 
-  fill(20);
+  fill(colorTextoInput);
   textAlign(LEFT, CENTER);
   textSize(22);
   String mostrar = "";
@@ -2807,10 +3026,10 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   textAlign(CENTER, TOP);
   textSize(14);
   if (hayErrorRondas) {
-    fill(255, 80, 80);
+    fill(colorTextoNegativo);
     text(mensajeRondas, width/2, campoRondasY + altoCampoRondas + 6);
   } else {
-    fill(200);
+    fill(colorTextoDetalle);
     text("Solo números. Entre " + rondasMin + " y " + rondasMax + ".", width/2, campoRondasY + altoCampoRondas + 6);
   }
 
@@ -2847,16 +3066,14 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   int botonConfirmarX = width/2 - (anchoBotonConfirmarVolver + 20);
   int botonVolverX    = width/2 + 20;
 
-  fill(80, 200, 120);
-  rect(botonConfirmarX, posicionYBotonesConfirmarVolver, anchoBotonConfirmarVolver, altoBotonConfirmarVolver, 12);
-  fill(255);
+  dibujarBotonEstilizado(botonConfirmarX, posicionYBotonesConfirmarVolver, anchoBotonConfirmarVolver, altoBotonConfirmarVolver, colorBotonConfirmar);
+  fill(colorTextoBoton);
   textAlign(CENTER, CENTER);
   textSize(20);
   text("Confirmar", botonConfirmarX + anchoBotonConfirmarVolver/2, posicionYBotonesConfirmarVolver + altoBotonConfirmarVolver/2);
 
-  fill(80);
-  rect(botonVolverX,  posicionYBotonesConfirmarVolver, anchoBotonConfirmarVolver, altoBotonConfirmarVolver, 12);
-  fill(255);
+  dibujarBotonEstilizado(botonVolverX, posicionYBotonesConfirmarVolver, anchoBotonConfirmarVolver, altoBotonConfirmarVolver, colorBotonVolver);
+  fill(colorTextoBoton);
   text("Volver",   botonVolverX + anchoBotonConfirmarVolver/2, posicionYBotonesConfirmarVolver + altoBotonConfirmarVolver/2);
   dibujarAudio();
  
@@ -2878,9 +3095,9 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   rect(0, 0, width, height);
 
   // Título
-  fill(255);
+  fill(colorTituloPrincipal);
   textAlign(CENTER, CENTER);
-  textSize(36);
+  textSize(42); // Título más grande
   text("Juegos Libres", width / 2, 100);
 
   // Nombres de los minijuegos
@@ -2905,10 +3122,10 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
 
   // Configuración de botones (igual que instrucciones)
   int tamanoBoton = 100;
-  int espacioEntreBotones = 30;
+  int espacioEntreBotones = 50;
   int inicioX = (width - (3 * tamanoBoton + 2 * espacioEntreBotones)) / 2;
   int inicioY = 180;
-  int espacioVertical = 140;
+  int espacioVertical = 180;
 
   // Dibujar 6 botones en grid 3x2
   for (int i = 0; i < nombresJuegos.length; i++) {
@@ -2921,8 +3138,8 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
                    mouseY >= y && mouseY <= y + tamanoBoton + 30;
     
     // Botón con imagen
-    if (hover) fill(60, 180, 255, 180);
-    else fill(40, 40, 60, 200);
+    if (hover) fill(red(colorBotonHover), green(colorBotonHover), blue(colorBotonHover), 180);
+    else fill(red(colorBotonNormal), green(colorBotonNormal), blue(colorBotonNormal), 200);
     rect(x - 5, y - 5, tamanoBoton + 10, tamanoBoton + 10, 12);
     
     // Imagen de la casilla
@@ -2935,7 +3152,7 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     }
     
     // Nombre del juego abajo
-    fill(255);
+    fill(127, 255, 212); // Verde agua
     textSize(14);
     textAlign(CENTER, TOP);
     text(nombresJuegos[i], x + tamanoBoton/2, y + tamanoBoton + 8);
@@ -2950,14 +3167,14 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   boolean hoverVolver = mouseX >= botonVolverX && mouseX <= botonVolverX + botonVolverW &&
                         mouseY >= botonVolverY && mouseY <= botonVolverY + botonVolverH;
 
-  if (hoverVolver) fill(60, 150, 255);
-  else fill(40, 60, 90);
+  if (hoverVolver) fill(colorBotonHoverAlternativo);
+  else fill(colorBotonNormalAlternativo);
   rect(botonVolverX, botonVolverY, botonVolverW, botonVolverH, 12);
 
-  fill(255);
+  fill(colorTextoBoton);
   textSize(18);
   textAlign(CENTER, CENTER);
-  text("← Volver", botonVolverX + botonVolverW/2, botonVolverY + botonVolverH/2);
+  text("Volver", botonVolverX + botonVolverW/2, botonVolverY + botonVolverH/2);
 
   dibujarAudio();
 
@@ -2971,17 +3188,17 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     if (fondoOrden != null) image(fondoOrden, 0, 0, width, height);
   else background(6, 18, 40);
   
-  fill(255);
+  fill(colorTituloPrincipal);
   textAlign(CENTER, CENTER);
-  textSize(32);
+  textSize(38); // Título más grande
   text("Corriente Desordenada", width/2, 80);
 
   textSize(18);
-  fill(220);
+  fill(colorTituloSecundario);
   text("Reconstrúyelas correctamente y decide cuál es más larga.", width/2, 120);
 
   textSize(20);
-  fill(200);
+  fill(colorTextoNegativo);
   textAlign(CENTER, CENTER);
   text("A desordenada: " + appScrambledA, width/2, 180);
   text("B desordenada: " + appScrambledB, width/2, 210);
@@ -2992,14 +3209,14 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
 
   if (campoActivoOrdenA) fill(255); else fill(230);
   rect(boxAX, boxAY, boxW, boxH, 8);
-  fill(0);
+  fill(colorTextoDetalle);
   textAlign(LEFT, CENTER);
   textSize(20);
   text(inputOrdenA, boxAX + 10, boxAY + boxH/2);
 
   if (campoActivoOrdenB) fill(255); else fill(230);
   rect(boxBX, boxBY, boxW, boxH, 8);
-  fill(0);
+  fill(colorTextoInput);
   textAlign(LEFT, CENTER);
   textSize(20);
   text(inputOrdenB, boxBX + 10, boxBY + boxH/2);
@@ -3008,37 +3225,40 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   textSize(18);
   float cx = width/2;
   float cy = boxBY + 110;
-  fill(200);
+  fill(colorTextoDetalle);
   text("¿Cuál es más larga?", cx, cy - 26);
 
   float optW = 160, optH = 40, gap = 18;
   float ox = cx - (optW*3 + gap*2)/2;
 
-  if (seleccionComparacion == 0) fill(60,200,120); else fill(60,150,255);
-  rect(ox, cy, optW, optH, 10);
-  fill(255); text("A más larga", ox + optW/2, cy + optH/2);
+  if (seleccionComparacion == 0) dibujarBotonEstilizado(ox, cy, optW, optH, colorBotonSeleccionado);
+  else dibujarBotonEstilizado(ox, cy, optW, optH, colorBotonHoverAlternativo);
+  fill(colorTextoBoton);
+  text("A más larga", ox + optW/2, cy + optH/2);
 
-  if (seleccionComparacion == 1) fill(60,200,120); else fill(60,150,255);
-  rect(ox + (optW + gap), cy, optW, optH, 10);
-  fill(255); text("B más larga", ox + (optW + gap) + optW/2, cy + optH/2);
+  if (seleccionComparacion == 1) dibujarBotonEstilizado(ox + (optW + gap), cy, optW, optH, colorBotonSeleccionado);
+  else dibujarBotonEstilizado(ox + (optW + gap), cy, optW, optH, colorBotonHoverAlternativo);
+  fill(colorTextoBoton);
+  text("B más larga", ox + (optW + gap) + optW/2, cy + optH/2);
 
-  if (seleccionComparacion == 2) fill(60,200,120); else fill(60,150,255);
-  rect(ox + 2*(optW + gap), cy, optW, optH, 10);
-  fill(255); text("Igual", ox + 2*(optW + gap) + optW/2, cy + optH/2);
+  if (seleccionComparacion == 2) dibujarBotonEstilizado(ox + 2*(optW + gap), cy, optW, optH, colorBotonSeleccionado);
+  else dibujarBotonEstilizado(ox + 2*(optW + gap), cy, optW, optH, colorBotonHoverAlternativo);
+  fill(colorTextoBoton);
+  text("Igual", ox + 2*(optW + gap) + optW/2, cy + optH/2);
 
   float byButtons = cy + 90;
   float bw = 160, bh = 48;
 
-  fill(0,180,120);
-  rect(cx - bw - 16, byButtons, bw, bh, 10);
-  fill(255); textSize(18); text("Confirmar", cx - bw - 16 + bw/2, byButtons + bh/2);
+  dibujarBotonEstilizado(cx - bw - 16, byButtons, bw, bh, colorBotonConfirmar);
+  fill(colorTextoBoton);
+  textSize(18); text("Confirmar", cx - bw - 16 + bw/2, byButtons + bh/2);
 
-  fill(200,60,60);
-  rect(cx + 16, byButtons, bw, bh, 10);
-  fill(255); text("No sé", cx + 16 + bw/2, byButtons + bh/2);
+  dibujarBotonEstilizado(cx + 16, byButtons, bw, bh, colorBotonCancelar);
+  fill(colorTextoBoton);
+  text("No sé", cx + 16 + bw/2, byButtons + bh/2);
 
   if (mensajeOrden != null && mensajeOrden.length() > 0) {
-    fill(255, 230, 150);
+    fill(colorTextoAlerta);
     textSize(16);
     text(mensajeOrden, width/2, byButtons + bh + 36);
   }
@@ -3046,12 +3266,12 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   if (mostrarResultadoOrden) {
     fill(0,120);
     rect(0,0,width,height);
-    fill(255);
+    fill(colorTituloPrincipal);
     textSize(24);
     text(mensajeOrden, width/2, height/2 - 30);
-    fill(0,200,150);
-    rect(width/2 - 140, height/2 + 10, 280, 52, 12);
-    fill(255); textSize(20); text("Volver al tablero", width/2, height/2 + 36);
+    dibujarBotonEstilizado(width/2 - 140, height/2 + 10, 280, 52, colorBotonVolverTablero);
+    fill(colorTextoBoton);
+    textSize(20); text("Volver al tablero", width/2, height/2 + 36);
   }
   dibujarAudio();
 
@@ -3061,20 +3281,21 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   else background(8, 20, 45);
   fill(0, 130); noStroke(); rect(0, 0, width, height);
 
-  fill(255);
+  fill(colorTituloPrincipal);
   textAlign(CENTER, CENTER);
-  textSize(32);
+  textSize(38); // Título más grande
   text("La Letra Envenenada del Kraken", width/2, 80);
 
   textSize(20);
-  fill(220);
+  fill(colorTituloSecundario);
   text("Frase: \"" + fraseKraken + "\" (elige una letra minúscula)", width/2, 130);
 
-  fill(200);
+  fill(colorTextoInfo);
   textSize(18);
   text("Jugador actual: J" + (turnoKraken + 1), width/2, 170);
 
   if (!oponenteElegido) {
+    fill(colorTituloSecundario);
     text("Selecciona un oponente para enfrentarte:", width/2, 210);
 
     int bw = 140, bh = 46, gap = 18, baseY = 250;
@@ -3083,25 +3304,24 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
       if (j != jugadorActivo) {
         int bx = width/2 - (bw + gap) * (cantidadJugadores-1) / 2 + totalBtns*(bw + gap);
         int by = baseY;
-        fill(60, 150, 255);
-        rect(bx, by, bw, bh, 10);
-        fill(255);
+        dibujarBotonEstilizado(bx, by, bw, bh, colorBotonHoverAlternativo);
+        fill(colorTextoBoton);
         text("Elegir J" + (j+1), bx + bw/2, by + bh/2);
         totalBtns++;
       }
     }
-    fill(255, 230, 150);
+    fill(colorTextoAlerta);
     text(mensajeKraken, width/2, baseY + 80);
 
   } else {
     textAlign(CENTER, CENTER);
-    fill(180);
+    fill(colorTextoDetalle);
     String historial = "Letras usadas: ";
     for (int k = 0; k < totalLetrasElegidas; k++) historial += letrasElegidas[k] + " ";
     text(historial, width/2, 210);
 
     textSize(18);
-    fill(255);
+    fill(colorTituloSecundario);
     text("Escribe UNA letra que aparezca en la frase y presiona ENTER", width/2, 250);
 
     char[] letrasV = new char[26];
@@ -3120,22 +3340,22 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     String letrasValidas = "Letras válidas: ";
     for (int j = 0; j < totalV; j++) letrasValidas += letrasV[j] + " ";
     textSize(16);
-    fill(200);
+    fill(colorTextoInfo);
     text(letrasValidas, width/2, 275);
 
     fill(0, 100);
     rect(width/2 - 100, 300, 200, 44, 8);
-    fill(255);
+    fill(colorTextoInput);
     textSize(22);
     text(inputLetraKraken, width/2, 322);
 
     textSize(18);
     if (mensajeKraken.length() > 0) {
-      fill(255, 80, 80);
+      fill(colorTextoNegativo);
       text(mensajeKraken, width/2, 360);
     }
 
-    fill(220);
+    fill(colorTextoDetalle);
     textSize(16);
     text("Turno: J" + (turnoKraken+1) + " — evita la letra envenenada...", width/2, 390);
   }
@@ -3144,12 +3364,12 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     fill(0, 0, 0, 180);
     rect(0, 0, width, height);
 
-    fill(192, 0, 255);
+    fill(colorTextoNegativo);
     textAlign(CENTER, CENTER);
-    textSize(36);
+    textSize(42); // Título más grande
     text("¡Letra envenenada!", width/2, height/2 - 60);
 
-    fill(255);
+    fill(colorTituloPrincipal);
     textSize(24);
     int perdedor = turnoKraken;
     int ganador;
@@ -3165,9 +3385,9 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     int botonX = width/2 - botonAncho/2;
     int botonY = height/2 + 40;
 
-    fill(0, 200, 150);
+    fill(colorBotonVolverTablero);
     rect(botonX, botonY, botonAncho, botonAlto, 12);
-    fill(255);
+    fill(colorTextoBoton);
     textSize(20);
     text("Volver al tablero", width/2, botonY + botonAlto/2);
   }
@@ -3206,9 +3426,10 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
 
   fill(255);
   textAlign(CENTER, CENTER);
-  textSize(48);
+  textSize(54); // Título más grande
   text("¡Juego Terminado!", width/2, height/2 - 100);
 
+  fill(colorTituloPrincipal);
   textSize(28);
   text("Gracias por jugar UnderWater: The Next Step", width/2, height/2 - 40);
   
@@ -3225,7 +3446,7 @@ for (int i = 1; i < cantidadJugadores; i++) {
 }
 
 textSize(32);
-fill(#FFD700);
+fill(255, 255, 153); // Amarillo claro para ganador
 
 if (empate) {
   text("¡Empate entre jugadores!", width/2, height/2 + 20);
@@ -3237,10 +3458,9 @@ if (empate) {
 int bw = 220, bh = 60;
 int bx = width/2 - bw/2, by = height/2 + 120;
 
-fill(60, 180, 255);
-rect(bx, by, bw, bh, 14);
+dibujarBotonEstilizado(bx, by, bw, bh, colorBotonVolverMenu);
 
-fill(255);
+fill(colorTextoBoton);
 textSize(22);
 text("Volver al menú", bx + bw/2, by + bh/2);
   dibujarAudio();
@@ -3261,12 +3481,18 @@ text("Volver al menú", bx + bw/2, by + bh/2);
 
 
   noStroke();
-  fill(35, 70, 130);
-  rect(width - anchoPanelLateral, 0, anchoPanelLateral, height);
-  fill(colorTexto);
+  // Dibujar imagen de fondo del panel lateral si existe
+  if (imagenFondoPanelLateral != null) {
+    image(imagenFondoPanelLateral, width - anchoPanelLateral, 0, anchoPanelLateral, height);
+  } else {
+    // Si no hay imagen, usar color sólido
+    fill(35, 70, 130);
+    rect(width - anchoPanelLateral, 0, anchoPanelLateral, height);
+  }
+  fill(colorTextoHUD);
   textAlign(LEFT, TOP);
   textSize(18);
-  text("Casilla: " + posicionJugador[jugadorActivo], width - anchoPanelLateral + 20, 40);
+  text("Casilla: " + posicionJugador[jugadorActivo], width - anchoPanelLateral + 20, 100);
 
   String tipoCasillaActualTexto = "";
   int tipoCasillaActual = casillas[posicionJugador[jugadorActivo]][2];
@@ -3283,38 +3509,42 @@ else if (tipoCasillaActual == 10) tipoCasillaActualTexto = "ATAQUE DEL \n KRAKEN
 else if (tipoCasillaActual == 11) tipoCasillaActualTexto = "FLAPPY OCEAN";
 
 
-  text("Tipo de casilla: " + tipoCasillaActualTexto, width - anchoPanelLateral + 20, 80);
+  fill(colorTituloSecundario);
+  text("Tipo de casilla: " + tipoCasillaActualTexto, width - anchoPanelLateral + 20, 140);
+  fill(colorTextoInfo);
   textSize(20);
-  text("Turno: Jugador " + (jugadorActivo + 1), width - anchoPanelLateral + 20, 120);
-  text("Ronda: " + rondaActual + " / " + rondasTotales, width - anchoPanelLateral + 20, 166);
+  text("Turno: Jugador " + (jugadorActivo + 1), width - anchoPanelLateral + 20, 180);
+  fill(colorTextoDetalle);
+  text("Ronda: " + rondaActual + " / " + rondasTotales, width - anchoPanelLateral + 20, 226);
 
-  double dadoX = width - anchoPanelLateral / 2.0 - 40;
-  double dadoY = 240;            
-  double dadoW = 80;
-  double dadoH = 80;
+  double dadoW = 197; // 2/3 de 295
+  double dadoH = 157; // 2/3 de 235
+  double dadoX = width - anchoPanelLateral / 2.0 - dadoW / 2.0; // Centrado
+  double dadoY = 300;            
 
-  fill(colorTexto);
+  fill(colorTextoHUD);
   textAlign(CENTER, CENTER);
   textSize(18);
   if (!esperandoEleccionRuta) {
     text("Lanzar dado", width - anchoPanelLateral / 2.0, (float)(dadoY - 22));
   }
 
+  // Dibujar borde visual alrededor del área clickeable
+  noFill();
+  stroke(colorBordeBoton);
+  strokeWeight((float)grosorBordeBoton);
+  rect((float)(dadoX - 8), (float)(dadoY - 8), (float)(dadoW + 16), (float)(dadoH + 16), 12);
+  noStroke();
+
   int cara = caraDado;
   if (cara >= 1 && cara <= 6) { cara = cara - 1; }
   if (cara >= 0 && cara < 6 && imagenesCaraDado != null && imagenesCaraDado[cara] != null) {
     image(imagenesCaraDado[cara], (float)dadoX, (float)dadoY, (float)dadoW, (float)dadoH);
-    noFill(); stroke(255); rect((float)(dadoX - 4), (float)(dadoY - 4), (float)(dadoW + 8), (float)(dadoH + 8), 6); noStroke();
   } else {
     fill(255); rect((float)dadoX, (float)dadoY, (float)dadoW, (float)dadoH);
-    fill(0); textAlign(CENTER, CENTER); textSize(18);
+    fill(colorTextoHUD);
+    textAlign(CENTER, CENTER); textSize(18);
     text("Lanzar", (float)(dadoX + dadoW/2.0), (float)(dadoY + dadoH/2.0));
-  }
-
-  if (caraDado > 0) {
-    fill(255); rect((float)dadoX, (float)(dadoY + dadoH + 10), (float)dadoW, 30);
-    fill(0); textAlign(CENTER, CENTER); textSize(16);
-    text("Dado: " + caraDado, (float)(dadoX + dadoW / 2.0), (float)(dadoY + dadoH + 25));
   }
 
   double paddingY = 64;          
@@ -3330,14 +3560,14 @@ else if (tipoCasillaActual == 11) tipoCasillaActualTexto = "FLAPPY OCEAN";
   double botonRutaBY = botonRutaAY;
 
   if (esperandoEleccionRuta) {
-    fill(80, 180, 255);
-    rect((float)botonRutaAX, (float)botonRutaAY, (float)anchoBotonRuta, (float)altoBotonRuta, 8);
-    fill(255); textAlign(CENTER, CENTER); text("Ruta A",
+    dibujarBotonEstilizado((float)botonRutaAX, (float)botonRutaAY, (float)anchoBotonRuta, (float)altoBotonRuta, colorBotonRutaA);
+    fill(colorTextoBoton);
+    textAlign(CENTER, CENTER); text("Ruta A",
       (float)(botonRutaAX + anchoBotonRuta/2.0), (float)(botonRutaAY + altoBotonRuta/2.0));
 
-    fill(80, 220, 160);
-    rect((float)botonRutaBX, (float)botonRutaBY, (float)anchoBotonRuta, (float)altoBotonRuta, 8);
-    fill(255); text("Ruta B",
+    dibujarBotonEstilizado((float)botonRutaBX, (float)botonRutaBY, (float)anchoBotonRuta, (float)altoBotonRuta, colorBotonRutaB);
+    fill(colorTextoBoton);
+    text("Ruta B",
       (float)(botonRutaBX + anchoBotonRuta/2.0), (float)(botonRutaBY + altoBotonRuta/2.0));
   }
 
@@ -3345,14 +3575,14 @@ else if (tipoCasillaActual == 11) tipoCasillaActualTexto = "FLAPPY OCEAN";
   fill(0, 0, 0, 120);
   rect(0, height - 48, width - anchoPanelLateral, 48);
   textAlign(LEFT, CENTER);
-  fill(255);
+  fill(colorTextoHUD);
   textSize(16);
   double marcadorX = 20;
   double marcadorY = height - 24;
   for (i = 0; i < cantidadJugadores; i = i + 1) {
     fill(colorJugador[i % colorJugador.length]);
     rect((float)marcadorX, (float)(marcadorY - 12), 24, 24, 6);
-    fill(255);
+    fill(colorTextoHUD);
     text("  J" + (i + 1) + ": " + int(puntosJugador[i]), (float)(marcadorX + 30), (float)marcadorY);
     marcadorX = marcadorX + 130;
   }
@@ -3363,7 +3593,7 @@ else if (tipoCasillaActual == 11) tipoCasillaActualTexto = "FLAPPY OCEAN";
   if (millis() < mostrarMensajeHastaMs) {
     fill(0, 0, 0, 180);
     rect(20, height - 90, width - anchoPanelLateral - 40, 36);
-    fill(255);
+    fill(colorTextoHUD);
     textAlign(CENTER, CENTER);
     text(mensaje, (width - anchoPanelLateral) / 2, height - 72);
   }
@@ -3371,19 +3601,18 @@ else if (tipoCasillaActual == 11) tipoCasillaActualTexto = "FLAPPY OCEAN";
   if (preguntaVisible) {
     fill(0, 0, 0, 200);
     rect(0, 0, width, height);
-    fill(255);
+    fill(colorTextoAlerta);
     textAlign(CENTER, CENTER);
     textSize(26);
     text("Alerta de Permiso! Decida si permite o no concederlo.", width / 2, height / 2 - 80);
+    fill(colorTituloSecundario);
     textSize(20);
     text(textoPreguntaActual + "\n¿Permitir?", width / 2, height / 2 - 20);
-    fill(100, 220, 100);
-    rect(width / 2 - 90, height / 2 + 30, 80, 40, 10);
-    fill(255);
+    dibujarBotonEstilizado(width / 2 - 90, height / 2 + 30, 80, 40, colorBotonSi);
+    fill(colorTextoBoton);
     text("Sí", width / 2 - 50, height / 2 + 50);
-    fill(220, 100, 100);
-    rect(width / 2 + 10,  height / 2 + 30, 80, 40, 10);
-    fill(255);
+    dibujarBotonEstilizado(width / 2 + 10, height / 2 + 30, 80, 40, colorBotonNo);
+    fill(colorTextoBoton);
     text("No", width / 2 + 50, height / 2 + 50);
   }
 
@@ -3401,7 +3630,8 @@ else if (tipoCasillaActual == 11) tipoCasillaActualTexto = "FLAPPY OCEAN";
       line((float)nodoCentroX, (float)nodoCentroY, (float)opcionAX, (float)opcionAY);
       noStroke(); fill(80,180,255);
       ellipse((float)opcionAX, (float)opcionAY, 10, 10);
-      fill(255); textAlign(CENTER, BOTTOM);
+      fill(colorTextoBoton);
+      textAlign(CENTER, BOTTOM);
       text("A", (float)((nodoCentroX+opcionAX)/2.0), (float)((nodoCentroY+opcionAY)/2.0 - 6));
     }
 
@@ -3414,7 +3644,8 @@ else if (tipoCasillaActual == 11) tipoCasillaActualTexto = "FLAPPY OCEAN";
       line((float)nodoCentroX, (float)nodoCentroY, (float)opcionBX, (float)opcionBY);
       noStroke(); fill(80,220,160);
       ellipse((float)opcionBX, (float)opcionBY, 10, 10);
-      fill(255); textAlign(CENTER, TOP);
+      fill(colorTextoBoton);
+      textAlign(CENTER, TOP);
       text("B", (float)((nodoCentroX+opcionBX)/2.0), (float)((nodoCentroY+opcionBY)/2.0 + 6));
     }
     strokeWeight(1); stroke(20);
@@ -3525,15 +3756,15 @@ void mousePressed() {
     return;
   }
   
-  // Botón Mute (global, primero)
-  boolean clickMute = mouseX >= btnMuteX && mouseX <= btnMuteX + btnMuteW && mouseY >= btnMuteY && mouseY <= btnMuteH;
-  if (clickMute) {
-    sonidoActivo = !sonidoActivo;
-    if (musica != null) musica.amp(sonidoActivo ? volumenGeneral : 0);
-    return;
-  }
-  // Inicio drag del volumen (solo en menú)
+  // Botón Mute (solo en menú principal)
   if (estadoPantalla == MENU) {
+    boolean clickMute = mouseX >= btnMuteX && mouseX <= btnMuteX + btnMuteW && mouseY >= btnMuteY && mouseY <= btnMuteY + btnMuteH;
+    if (clickMute) {
+      sonidoActivo = !sonidoActivo;
+      if (musica != null) musica.amp(sonidoActivo ? volumenGeneral : 0);
+      return;
+    }
+    // Inicio drag del volumen (solo en menú)
     boolean sobreBarra = mouseX >= volX && mouseX <= volX + volW && mouseY >= volY - 8 && mouseY <= volY + volH + 8;
     if (sobreBarra) {
       volumenArrastrando = true;
@@ -3809,25 +4040,20 @@ void mousePressed() {
         submenuInstrucciones = -1;
       }
     } else {
-      // Menú principal - detectar clics en botones
+      // Menú principal - detectar clics en botones (mismos valores que en dibujo)
       int tamanoBoton = 100;
       int espacioEntreBotones = 30;
-      int inicioX = (width - (3 * tamanoBoton + 2 * espacioEntreBotones)) / 2;
-      int inicioY = 150; // Subido para que no se salga de la ventana
-      int espacioVertical = 130; // Reducido un poco para que quepa mejor
+      int inicioX = (width - (5 * tamanoBoton + 4 * espacioEntreBotones)) / 2;
+      int inicioY = 150;
+      int espacioVertical = 160;
       
       for (int i = 0; i < 10; i++) {
-        int fila = i / 3;
-        int columna = i % 3;
-        int x;
-        // Si es la última casilla (índice 9), centrarla
-        if (i == 9) {
-          x = (width - tamanoBoton) / 2; // Centrada
-        } else {
-          x = inicioX + columna * (tamanoBoton + espacioEntreBotones);
-        }
+        int fila = i / 5; // 2 filas de 5
+        int columna = i % 5;
+        int x = inicioX + columna * (tamanoBoton + espacioEntreBotones);
         int y = inicioY + fila * espacioVertical;
         
+        // Área clickeable: incluye el botón y el texto debajo
         if (mouseX >= x && mouseX <= x + tamanoBoton &&
             mouseY >= y && mouseY <= y + tamanoBoton + 30) {
           submenuInstrucciones = i;
@@ -4073,10 +4299,10 @@ if (preguntaVisible) {
 }
 
 
-    double dadoX = width - anchoPanelLateral / 2.0 - 40;
-    double dadoY = 240;
-    double dadoW = 80;
-    double dadoH = 80;
+    double dadoW = 197; // 2/3 de 295 (igual que en dibujo)
+    double dadoH = 157; // 2/3 de 235 (igual que en dibujo)
+    double dadoX = width - anchoPanelLateral / 2.0 - dadoW / 2.0; // Centrado (igual que en dibujo)
+    double dadoY = 300; // Igual que en dibujo
 
     boolean clickDado =
       !juegoTerminado && !esperandoFinJuego && !animacionEnCurso && !esperandoEleccionRuta && !preguntaVisible && !finTurnoPendiente &&
@@ -4088,6 +4314,7 @@ if (preguntaVisible) {
       pasosRestantes = caraDado;
       animacionEnCurso = true;
       ultimoPasoMs = millis();
+      efectoCasillaAplicado = false; // Resetear para que se ejecute el evento al finalizar
       if (rondaActual >= rondasTotales) {
   mensaje = "✅ Rondas completadas. Espere resultado...";
 } else {
@@ -4458,6 +4685,12 @@ if (estadoPantalla == JUEGO5 && minijuegoKrakenTerminado) {
       tentaculos[i][1] = 0;
     }
     
+    // Resetear shake y transformaciones para evitar que se queden aplicadas
+    shakeX = 0;
+    shakeY = 0;
+    resetMatrix(); // Resetear la matriz de transformación
+    imageMode(CORNER); // Asegurar que imageMode vuelva a CORNER
+    
     // Volver
     if (desdeJuegosLibres) {
       estadoPantalla = JUEGOS_LIBRES;
@@ -4641,5 +4874,27 @@ if (estadoPantalla == JUEGO4 && !juegoTerminadoLaberinto) {
       ultimaPausaMs = millis();
     }
   }
+  
+  // === Movimiento del jugador en Ataque del Kraken (JUEGO5) ===
+  if (estadoPantalla == JUEGO5 && !jugadorAtrapado && !minijuegoKrakenTerminado) {
+    if (keyCode == UP) teclaArriba = true;
+    else if (keyCode == DOWN) teclaAbajo = true;
+    else if (keyCode == LEFT) teclaIzquierda = true;
+    else if (keyCode == RIGHT) teclaDerecha = true;
+  }
 
-} 
+}
+
+// ========================================
+// INPUT - MANEJO DE TECLADO (KEY RELEASED)
+// ========================================
+void keyReleased() {
+  // === Movimiento del jugador en Ataque del Kraken (JUEGO5) ===
+  if (estadoPantalla == JUEGO5) {
+    if (keyCode == UP) teclaArriba = false;
+    else if (keyCode == DOWN) teclaAbajo = false;
+    else if (keyCode == LEFT) teclaIzquierda = false;
+    else if (keyCode == RIGHT) teclaDerecha = false;
+  }
+}
+ 
