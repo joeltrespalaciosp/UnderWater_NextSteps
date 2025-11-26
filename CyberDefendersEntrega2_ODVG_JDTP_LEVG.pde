@@ -117,7 +117,7 @@ void dibujarAudio() {
 }
 PImage imagenCasillaSospechosa, imagenCasillaSegura, imagenCasillaNeutral, imagenCasillaSalida, imagenCasillaPregunta, minijuegoTrivia, minijuegoOrden, minijuegoBomba;
 PImage minijuegoNuevo1, minijuegoNuevo2, minijuegoNuevo3;
-PImage fotoOscar, fotoLuis, fotoJoel;
+PImage fotoOscar, fotoLuis, fotoJoel, fotoPremioFeria;
 int anchoPanelLateral = 276;
 int tamanoCasilla     = 60;
 
@@ -493,7 +493,7 @@ void manejarClicksTrivia() {
     if (clickSeguir) {
       // Si ya alcanzó el tope de 5 preguntas, terminar
       if (preguntasContestadas >= preguntasMaxTrivia) {
-        puntosJugador[jugadorActivo] += puntajeTrivia;
+        modificarPuntosJugador(puntajeTrivia);
         mostrarMensaje("¡Trivia completada! +" + puntajeTrivia, 1600);
         // Reset y volver
         juegoTerminadoTrivia = true;
@@ -525,7 +525,7 @@ void manejarClicksTrivia() {
       }
     } else if (clickSalir) {
       // Sumar lo acumulado (positivo o negativo) y salir
-      puntosJugador[jugadorActivo] += puntajeTrivia;
+      modificarPuntosJugador(puntajeTrivia);
       mostrarMensaje("Trivia finalizada: " + (puntajeTrivia >= 0 ? "+" : "") + puntajeTrivia, 1400);
 
       // Reset y volver
@@ -737,6 +737,7 @@ int tiempoInicioLaberinto;
 int tiempoLimite = 20000; // 20 segundos
 float puntosLaberinto = 0;
 boolean juegoTerminadoLaberinto = false;
+boolean puntosLaberintoOtorgados = false; // Bandera para evitar que se otorguen puntos múltiples veces
 boolean ganoLaberinto = false;
 
 // === MINIJUEGO 6: FLAPPY OCEAN ===
@@ -881,20 +882,23 @@ if (!quedanDatos) {
   
   // BONUS si recogió todas las verdes
   puntosLaberinto += 2;
-  mostrarMensaje("✅ Red completada (+10 bonus)", 1500);
+  mostrarMensaje("✅ Red completada! (+2 puntos)", 1500);
 }
 else if (millis() - tiempoInicioLaberinto > tiempoLimite) {
   juegoTerminadoLaberinto = true;
   ganoLaberinto = false;
 }
 
-  if (juegoTerminadoLaberinto) {
+  // Solo otorgar puntos UNA VEZ cuando el juego termine
+  if (juegoTerminadoLaberinto && !puntosLaberintoOtorgados) {
+    puntosLaberintoOtorgados = true; // Marcar que ya se otorgaron los puntos
+    
     if (ganoLaberinto) {
       mostrarMensaje("✅ Red completada (+2)", 1600);
-      puntosJugador[jugadorActivo] += 2;
+      modificarPuntosJugador(2);
     } else {
       mostrarMensaje("💀 Caíste en un virus (-1)", 1600);
-      puntosJugador[jugadorActivo] -= 1;
+      modificarPuntosJugador(-1);
     }
 
     if (desdeJuegosLibres) {
@@ -2032,18 +2036,25 @@ fondoOrden = loadImage("fondo_corriente.jpg");
   // Redimensionar al cargar para mejor calidad de renderizado
   PImage tempOscar = loadImage("oscar.jpg");
   if (tempOscar != null) {
-    tempOscar.resize(250, 300);
+    tempOscar.resize(180, 220); // Reducido para que quepa la foto del premio
     fotoOscar = tempOscar;
   }
-  PImage tempLuis = loadImage("luis.jpg");
+  PImage tempLuis = loadImage("luis.png");
   if (tempLuis != null) {
-    tempLuis.resize(250, 300);
+    tempLuis.resize(180, 220); // Reducido para que quepa la foto del premio
     fotoLuis = tempLuis;
   }
   PImage tempJoel = loadImage("joel.jpeg");
   if (tempJoel != null) {
-    tempJoel.resize(250, 300);
+    tempJoel.resize(180, 220); // Reducido para que quepa la foto del premio
     fotoJoel = tempJoel;
+  }
+  
+  // Cargar foto del premio de la feria
+  PImage tempPremio = loadImage("feriaganador.png");
+  if (tempPremio != null) {
+    tempPremio.resize(500, 250); // Formato horizontal reducido
+    fotoPremioFeria = tempPremio;
   }
   
   spritesAv[0] = iconPulpo;
@@ -2333,6 +2344,13 @@ void dibujarJugadores() {
 void actualizarTurno() {
   if (finTurnoPendiente && !animacionEnCurso && !preguntaVisible && !esperandoEleccionRuta) {
     
+    // Validar que cantidadJugadores es válido antes de avanzar turno
+    if (cantidadJugadores <= 0) {
+      println("Error: cantidadJugadores inválido: " + cantidadJugadores);
+      finTurnoPendiente = false;
+      return;
+    }
+    
     // Avanzar turno
     jugadorActivo++;
 
@@ -2342,11 +2360,18 @@ void actualizarTurno() {
       rondaActual++;
 
       // Si se cumplieron todas las rondas, preparar fin del juego
-      if (rondaActual > rondasTotales && !esperandoFinJuego) {
-        rondaActual = rondasTotales;
+      // Cambiado a >= para incluir cuando se completa la última ronda
+      if (rondaActual >= rondasTotales && !esperandoFinJuego) {
+        rondaActual = rondasTotales; // Mantener en la última ronda para mostrar correctamente
         esperandoFinJuego = true;
         tiempoFinJuego = millis();
       }
+    }
+    
+    // Validar que jugadorActivo está dentro de los límites
+    if (jugadorActivo < 0 || jugadorActivo >= cantidadJugadores) {
+      println("Error: jugadorActivo fuera de límites: " + jugadorActivo + " / " + cantidadJugadores);
+      jugadorActivo = 0; // Resetear a un valor seguro
     }
 
     // Control del mensaje final (espera 10 segundos)
@@ -2407,11 +2432,45 @@ void actualizarTurno() {
   }
 }
 
+// Función auxiliar para modificar puntos de forma segura
+void modificarPuntosJugador(float cantidad) {
+  if (puntosJugador != null && 
+      jugadorActivo >= 0 && 
+      jugadorActivo < puntosJugador.length &&
+      jugadorActivo < cantidadJugadores) {
+    puntosJugador[jugadorActivo] += cantidad;
+  } else {
+    println("Error: No se pudo modificar puntos. jugadorActivo: " + jugadorActivo + 
+            ", puntosJugador.length: " + (puntosJugador != null ? puntosJugador.length : 0) +
+            ", cantidadJugadores: " + cantidadJugadores);
+  }
+}
+
+// Función auxiliar para modificar puntos de un jugador específico (para minijuegos con múltiples jugadores)
+void modificarPuntosJugadorEspecifico(int indiceJugador, float cantidad) {
+  if (puntosJugador != null && 
+      indiceJugador >= 0 && 
+      indiceJugador < puntosJugador.length &&
+      indiceJugador < cantidadJugadores) {
+    puntosJugador[indiceJugador] += cantidad;
+  } else {
+    println("Error: No se pudo modificar puntos. indiceJugador: " + indiceJugador + 
+            ", puntosJugador.length: " + (puntosJugador != null ? puntosJugador.length : 0) +
+            ", cantidadJugadores: " + cantidadJugadores);
+  }
+}
+
 void aplicarEfectoCasilla(int tipo) {
   // Reset básicos
   efectoCasillaAplicado = true;
   animacionEnCurso = false;
   esperandoEleccionRuta = false;
+
+  // Validar que tenemos acceso seguro a puntosJugador
+  boolean accesoValido = (puntosJugador != null && 
+                          jugadorActivo >= 0 && 
+                          jugadorActivo < puntosJugador.length &&
+                          jugadorActivo < cantidadJugadores);
 
   switch (tipo) {
     case 1: // Salida
@@ -2420,7 +2479,7 @@ void aplicarEfectoCasilla(int tipo) {
       break;
 
     case 2: // 🔴 Sospechosa
-      puntosJugador[jugadorActivo] -= 2;
+      modificarPuntosJugador(-2);
       mostrarMensaje("Casilla sospechosa (-2)", 1400);
       finTurnoPendiente = true;
       break;
@@ -2431,7 +2490,7 @@ void aplicarEfectoCasilla(int tipo) {
       break;
 
     case 4: // Segura
-      puntosJugador[jugadorActivo] += 2;
+      modificarPuntosJugador(2);
       mostrarMensaje("Casilla segura (+2)", 1400);
       finTurnoPendiente = true;
       break;
@@ -2558,6 +2617,7 @@ case 9: // Red del Abismo
   tiempoInicioLaberinto = millis();
   puntosLaberinto = 0;
   juegoTerminadoLaberinto = false;
+  puntosLaberintoOtorgados = false; // Resetear bandera para nuevo juego
 
   efectoCasillaAplicado = true;
   animacionEnCurso = false;
@@ -2648,7 +2708,7 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   fill(0, 120);
   rect(0, 0, width, height);
 
-  fill(colorTituloPrincipal);
+  fill(255); // Color blanco para el título
   textAlign(CENTER, CENTER);
   textSize(48); // Título más grande
   text("UnderWater: The Next Step", width/2, 120);
@@ -2689,10 +2749,10 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     // Activar suavizado para mejor calidad de imagen
     smooth();
     
-    // Espaciado para las fotos
-    int espacioEntreFotos = 40;
-    int anchoFoto = 250;
-    int altoFoto = 300;
+    // Espaciado para las fotos (reducido para que quepa la foto del premio)
+    int espacioEntreFotos = 30;
+    int anchoFoto = 180; // Reducido de 250 a 180
+    int altoFoto = 220; // Reducido de 300 a 220
     int inicioX = (width - (3 * anchoFoto + 2 * espacioEntreFotos)) / 2;
     int inicioYCreditos = 120;
     
@@ -2752,6 +2812,27 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     fill(colorTituloSecundario);
     textSize(14);
     text("Diseñador", inicioX + 2 * (anchoFoto + espacioEntreFotos) + anchoFoto/2, inicioYCreditos + altoFoto + 35);
+    
+    // Espacio para foto horizontal del premio de la feria
+    int inicioYPremio = inicioYCreditos + altoFoto + 60; // Espacio reducido debajo de las fotos de los integrantes
+    int anchoFotoPremio = 500; // Foto horizontal reducida de 600 a 500
+    int altoFotoPremio = 250; // Altura reducida de 300 a 250
+    int inicioXPremio = (width - anchoFotoPremio) / 2;
+    
+    if (fotoPremioFeria != null) {
+      image(fotoPremioFeria, inicioXPremio, inicioYPremio, anchoFotoPremio, altoFotoPremio);
+    } else {
+      fill(100, 150, 255);
+      rect(inicioXPremio, inicioYPremio, anchoFotoPremio, altoFotoPremio);
+      fill(135, 206, 255);
+      textSize(24);
+      textAlign(CENTER, CENTER);
+      text("?", inicioXPremio + anchoFotoPremio/2, inicioYPremio + altoFotoPremio/2);
+    }
+    fill(colorTituloPrincipal);
+    textSize(18);
+    textAlign(CENTER, TOP);
+    text("Ganadores Feria Gamer Semestre: 2025_10", inicioXPremio + anchoFotoPremio/2, inicioYPremio + altoFotoPremio + 15);
     
     // Botón cerrar
     int cerrarBotonX = width - 170, cerrarBotonY = 100, cerrarBotonAncho = 120, cerrarBotonAlto = 45;
@@ -2819,7 +2900,7 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
                         "- Al final, el jugador con más puntos será el ganador.";
     } else if (submenuInstrucciones == 1) {
       tituloSubmenu = "Trivia del Abismo";
-      textoExplicacion = "Responde hasta 5 preguntas sobre apps sospechosas o cultura digital.\n\n" +
+      textoExplicacion = "Responde hasta 3 preguntas sobre apps sospechosas o cultura digital.\n\n" +
                         "Cada acierto suma puntos, pero si decides seguir, ¡arriesgas más!\n\n" +
                         "Puedes decidir continuar después de cada pregunta o salir con tus puntos acumulados.\n\n" +
                         "¡Ten cuidado! Si fallas, perderás puntos.";
@@ -2836,7 +2917,7 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
                         "Debes ser estratégico y adivinar qué letra está envenenada.\n\n" +
                         "¡El jugador que evite la letra envenenada gana puntos!";
     } else if (submenuInstrucciones == 4) {
-      tituloSubmenu = "Laberinto Digital";
+      tituloSubmenu = "Red del Abismo";
       textoExplicacion = "Navega por un laberinto evitando los obstáculos.\n\n" +
                         "Debes llegar al final del laberinto para ganar puntos.\n\n" +
                         "Usa las teclas de flecha o WASD para moverte.\n\n" +
@@ -2902,14 +2983,14 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     
     // Configuración de botones - 2 filas de 5 botones
     int tamanoBoton = 100;
-    int espacioEntreBotones = 30;
+    int espacioEntreBotones = 50; // Aumentado de 30 a 50 para separar más los botones
     int inicioX = (width - (5 * tamanoBoton + 4 * espacioEntreBotones)) / 2;
     int inicioY = 150;
-    int espacioVertical = 160;
+    int espacioVertical = 180; // Aumentado de 160 a 180 para más espacio vertical
     
     // Nombres de los juegos y casillas
     String[] nombresJuegos = {"Información General", "Trivia del Abismo", "Corriente Desordenada", 
-                               "Kraken Envenenado", "Laberinto Digital", "Ataque del Kraken", "Flappy Ocean",
+                               "Kraken Envenenado", "Red del Abismo", "Ataque del Kraken", "Flappy Ocean",
                                "Casillas Seguras", "Casillas Sospechosas", "Casillas Neutras"};
     PImage[] imagenesJuegos = {null, minijuegoTrivia, minijuegoOrden, minijuegoBomba, 
                                minijuegoNuevo1, minijuegoNuevo2, minijuegoNuevo3,
@@ -2973,15 +3054,15 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   fill(0, 140);
   rect(0, 0, width, height);
 
-  fill(colorTituloPrincipal);
-  textAlign(CENTER, CENTER);
-  textSize(42); // Título más grande
-  text("Elige número de jugadores", width/2, 140);
-
   int anchoBotonSeleccion = 80, altoBotonSeleccion = 80, espacioEntreOpciones = 40;
   int anchoTotalOpciones = 3*anchoBotonSeleccion + 2*espacioEntreOpciones;
   int inicioXOpciones = width/2 - anchoTotalOpciones/2;
   int posicionYOpciones = height/2 - altoBotonSeleccion/2;
+  
+  fill(colorTituloPrincipal);
+  textAlign(CENTER, CENTER);
+  textSize(42); // Título más grande
+  text("Elige número de jugadores", width/2, posicionYOpciones - 60); // Posicionado justo arriba de los botones
 
   for (int indiceOpcion = 0; indiceOpcion < 3; indiceOpcion = indiceOpcion + 1) {
     int valorCantidadJugadores = 2 + indiceOpcion;
@@ -3378,7 +3459,7 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
     } else {
       ganador = jugadorActivo;
     }
-    text("J" + (perdedor + 1) + " perdió (-2) y J" + (ganador + 1) + " ganó (+4)", width/2, height/2 - 10);
+    text("J" + (perdedor + 1) + " perdió (-1) y J" + (ganador + 1) + " ganó (+2)", width/2, height/2 - 10);
 
     int botonAncho = 220;
     int botonAlto = 50;
@@ -3433,26 +3514,50 @@ if (imagenFondoMenu != null) image(imagenFondoMenu, 0, 0, width, height);
   textSize(28);
   text("Gracias por jugar UnderWater: The Next Step", width/2, height/2 - 40);
   
-int ganador = 0;
-boolean empate = false;
-
-for (int i = 1; i < cantidadJugadores; i++) {
-  if (puntosJugador[i] > puntosJugador[ganador]) {
-    ganador = i;
-    empate = false;
-  } else if (puntosJugador[i] == puntosJugador[ganador]) {
-    empate = true;
+  // Validar que tenemos datos válidos antes de determinar el ganador
+  int ganador = 0;
+  boolean empate = false;
+  
+  if (puntosJugador != null && cantidadJugadores > 0 && puntosJugador.length >= cantidadJugadores) {
+    // Encontrar el puntaje máximo
+    float maxPuntos = puntosJugador[0];
+    int contadorEmpate = 1;
+    
+    for (int i = 1; i < cantidadJugadores; i++) {
+      if (i < puntosJugador.length) {
+        if (puntosJugador[i] > maxPuntos) {
+          maxPuntos = puntosJugador[i];
+          ganador = i;
+          contadorEmpate = 1;
+        } else if (puntosJugador[i] == maxPuntos) {
+          contadorEmpate++;
+        }
+      }
+    }
+    
+    // Verificar si hay empate (múltiples jugadores con el mismo puntaje máximo)
+    if (contadorEmpate > 1) {
+      empate = true;
+    }
+    
+    textSize(32);
+    fill(255, 255, 153); // Amarillo claro para ganador
+    
+    if (empate) {
+      text("¡Empate entre jugadores con " + int(maxPuntos) + " puntos!", width/2, height/2 + 20);
+    } else {
+      if (ganador < puntosJugador.length) {
+        text("Ganador: Jugador " + (ganador + 1) + " con " + int(puntosJugador[ganador]) + " puntos", width/2, height/2 + 20);
+      } else {
+        text("Error al calcular ganador", width/2, height/2 + 20);
+      }
+    }
+  } else {
+    // Fallback si hay problemas con los datos
+    textSize(32);
+    fill(255, 255, 153);
+    text("Error: No se pudieron calcular los resultados", width/2, height/2 + 20);
   }
-}
-
-textSize(32);
-fill(255, 255, 153); // Amarillo claro para ganador
-
-if (empate) {
-  text("¡Empate entre jugadores!", width/2, height/2 + 20);
-} else {
-  text("Ganador: Jugador " + (ganador + 1) + " con " + int(puntosJugador[ganador]) + " puntos", width/2, height/2 + 20);
-}
 
 // --- Botón volver al menú ---
 int bw = 220, bh = 60;
@@ -3735,11 +3840,11 @@ void mousePressed() {
         } else {
           // Sumar puntos al jugador y volver al tablero
           if (ganoFlappy) {
-            puntosJugador[jugadorActivo] += 2; // Puntos equitativos
+            modificarPuntosJugador(2);
             mostrarMensaje("¡Flappy Ocean completado! (+2)", 1600);
           } else {
-            puntosJugador[jugadorActivo] += 1; // Puntos equitativos
-            mostrarMensaje("Flappy Ocean: (+1)", 1600);
+            // No otorgar puntos si perdió
+            mostrarMensaje("Flappy Ocean: No completado (0 puntos)", 1600);
           }
           estadoPantalla = JUEGO;
           efectoCasillaAplicado = true;
@@ -3997,6 +4102,7 @@ void mousePressed() {
           tiempoInicioLaberinto = millis();
           puntosLaberinto = 0;
           juegoTerminadoLaberinto = false;
+          puntosLaberintoOtorgados = false; // Resetear bandera para nuevo juego
           ganoLaberinto = false;
         } else if (i == 4) { // Ataque del Kraken Digital
           // Verificar que tentaculos esté inicializado
@@ -4277,13 +4383,13 @@ if (preguntaVisible) {
     int efecto = efectoSiPermitir[idx]; // -1 si era peligroso, +1 si era seguro
 
     if (clickSi) {
-      puntosJugador[jugadorActivo] += efecto;
+      modificarPuntosJugador(efecto);
       if (efecto > 0)
         mostrarMensaje("Permitiste un permiso útil (+1)", 1000);
       else
         mostrarMensaje("¡Cuidado! Permitiste un permiso peligroso (-1)", 1000);
     } else { // clickNo
-      puntosJugador[jugadorActivo] -= efecto;
+      modificarPuntosJugador(-efecto);
       if (efecto > 0)
         mostrarMensaje("Negaste un permiso útil (-1)", 1000);
       else
@@ -4363,14 +4469,14 @@ mostrarMensajeHastaMs = millis() + 800;
             int r = int(random(preguntasPermisos.length));
             textoPreguntaActual = preguntasPermisos[r];
           } else if (tipo == 2) {
-            puntosJugador[jugadorActivo] -= 2;
+            modificarPuntosJugador(-2);
             mensaje = "Casilla sospechosa (-2)";
             mostrarMensajeHastaMs = millis() + 1000;
             efectoCasillaAplicado = true;
             animacionEnCurso = false;
             finTurnoPendiente = true;
           } else if (tipo == 4) {
-            puntosJugador[jugadorActivo] += 2;
+            modificarPuntosJugador(2);
             mensaje = "Casilla segura (+2)";
             mostrarMensajeHastaMs = millis() + 1000;
             efectoCasillaAplicado = true;
@@ -4581,7 +4687,7 @@ manejarClicksTrivia();
 
         if (correctoA && correctoB && correctoComparacion) {
           mensajeOrden = "¡Correcto! +2 puntos";
-          puntosJugador[jugadorActivo] += 2;
+          modificarPuntosJugador(2);
         } else {
           mensajeOrden = "Incorrecto. No ganaste puntos.";
         }
@@ -4590,7 +4696,7 @@ manejarClicksTrivia();
         mostrarResultadoOrden = true;
       } else if (clickNoSe) {
         // Penalización inmediata
-        puntosJugador[jugadorActivo] -= 2;
+        modificarPuntosJugador(-2);
         mensajeOrden = "No supiste. -2 puntos";
         juegoTerminadoOrden = true;
         mostrarResultadoOrden = true;
@@ -4670,10 +4776,10 @@ if (estadoPantalla == JUEGO5 && minijuegoKrakenTerminado) {
       mouseY >= height/2 + 60 && mouseY <= height/2 + 110) {
     // Aplicar premios
     if (ganoKraken) {
-      puntosJugador[jugadorActivo] += 2;
+      modificarPuntosJugador(2);
       mostrarMensaje("¡Sobreviviste al Kraken! (+2)", 1600);
     } else {
-      puntosJugador[jugadorActivo] -= 1;
+      modificarPuntosJugador(-1);
       mostrarMensaje("El Kraken te atrapó (-1)", 1600);
     }
     
@@ -4740,11 +4846,11 @@ void keyPressed() {
         } else {
           // Volver al tablero
           if (ganoFlappy) {
-            puntosJugador[jugadorActivo] += 2; // Puntos equitativos
+            modificarPuntosJugador(2);
             mostrarMensaje("¡Flappy Ocean completado! (+2)", 1600);
           } else {
-            puntosJugador[jugadorActivo] += 1; // Puntos equitativos
-            mostrarMensaje("Flappy Ocean: (+1)", 1600);
+            // No otorgar puntos si perdió
+            mostrarMensaje("Flappy Ocean: No completado (0 puntos)", 1600);
           }
           estadoPantalla = JUEGO;
           efectoCasillaAplicado = true;
@@ -4826,14 +4932,14 @@ for (int k = 0; k < totalLetrasElegidas && !yaElegida; k++) {
             }
             
             if (letraElegida == letraInfectada) {
-              puntosJugador[turnoKraken] -= 1;
+              modificarPuntosJugadorEspecifico(turnoKraken, -1);
               int otroJugador;
               if (turnoKraken == jugadorActivo) {
                 otroJugador = jugadorOponente;
               } else {
                 otroJugador = jugadorActivo;
               }
-              puntosJugador[otroJugador] += 2;
+              modificarPuntosJugadorEspecifico(otroJugador, 2);
               
               mensajeKraken = "¡J" + (turnoKraken + 1) + " eligió la letra envenenada '" + letraInfectada + "'! Pierde 1 punto, J" + (otroJugador + 1) + " gana 2.";
               juegoTerminadoKraken = true;
